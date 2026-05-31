@@ -164,3 +164,14 @@
     letter-spacing: -0.02em;
   }
 }
+
+@layer utilities {
+  .bg-farm-gradient {
+    background-image:
+      radial-gradient(circle at 15% 10%, color-mix(in oklab, var(--color-harvest) 28%, transparent) 0%, transparent 55%),
+      radial-gradient(circle at 85% 0%, color-mix(in oklab, var(--color-sky) 22%, transparent) 0%, transparent 45%),
+      linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 65%, transparent) 0%, transparent 45%);
+    background-repeat: no-repeat;
+    background-size: 140% 140%, 120% 120%, 100% 100%;
+  }
+}

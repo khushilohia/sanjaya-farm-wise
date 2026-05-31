@@ -15,10 +15,12 @@ import { Route as SchemesRouteImport } from './routes/schemes'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as MarketRouteImport } from './routes/market'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as DiseaseDetectionRouteImport } from './routes/disease-detection'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -52,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KioskRoute = KioskRouteImport.update({
+  id: '/kiosk',
+  path: '/kiosk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiseaseDetectionRoute = DiseaseDetectionRouteImport.update({
   id: '/disease-detection',
   path: '/disease-detection',
@@ -72,6 +79,11 @@ const AssistantRoute = AssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -86,10 +98,12 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/alerts': typeof AlertsRoute
   '/assistant': typeof AssistantRoute
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
+  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -100,10 +114,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/alerts': typeof AlertsRoute
   '/assistant': typeof AssistantRoute
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
+  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -115,10 +131,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/alerts': typeof AlertsRoute
   '/assistant': typeof AssistantRoute
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
+  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -131,10 +149,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/alerts'
     | '/assistant'
     | '/community'
     | '/dashboard'
     | '/disease-detection'
+    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -145,10 +165,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/alerts'
     | '/assistant'
     | '/community'
     | '/dashboard'
     | '/disease-detection'
+    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -159,10 +181,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/alerts'
     | '/assistant'
     | '/community'
     | '/dashboard'
     | '/disease-detection'
+    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -174,10 +198,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AlertsRoute: typeof AlertsRoute
   AssistantRoute: typeof AssistantRoute
   CommunityRoute: typeof CommunityRoute
   DashboardRoute: typeof DashboardRoute
   DiseaseDetectionRoute: typeof DiseaseDetectionRoute
+  KioskRoute: typeof KioskRoute
   LoginRoute: typeof LoginRoute
   MarketRoute: typeof MarketRoute
   RegisterRoute: typeof RegisterRoute
@@ -230,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/kiosk': {
+      id: '/kiosk'
+      path: '/kiosk'
+      fullPath: '/kiosk'
+      preLoaderRoute: typeof KioskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/disease-detection': {
       id: '/disease-detection'
       path: '/disease-detection'
@@ -258,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -278,10 +318,12 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AlertsRoute: AlertsRoute,
   AssistantRoute: AssistantRoute,
   CommunityRoute: CommunityRoute,
   DashboardRoute: DashboardRoute,
   DiseaseDetectionRoute: DiseaseDetectionRoute,
+  KioskRoute: KioskRoute,
   LoginRoute: LoginRoute,
   MarketRoute: MarketRoute,
   RegisterRoute: RegisterRoute,
@@ -292,3 +334,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
