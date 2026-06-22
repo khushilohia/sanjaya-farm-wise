@@ -6,7 +6,7 @@ export type CropEntry = {
   stage: string;
   progress: number; // 0-100
   plantedDate: string; // ISO date
-  areAcres: string;
+  areaAcres: string;
 };
 
 export type AILogEntry = {
@@ -16,6 +16,17 @@ export type AILogEntry = {
   answer: string;
   language: string;
   tagged?: boolean;
+};
+
+export type DiseaseScan = {
+  id: string;
+  date: string; // ISO
+  crop: string;
+  disease: string;
+  confidence: number;
+  severity: string;
+  summary: string;
+  status: "Detected" | "Treating" | "Resolved";
 };
 
 export type FarmData = {
@@ -35,12 +46,33 @@ export type FarmData = {
   // AI conversation log
   aiLogs: AILogEntry[];
 
+  // Disease detection history
+  diseaseScans: DiseaseScan[];
+
   // Actions
   updateCropEntries: (entries: CropEntry[]) => void;
-  updateSetupField: (field: Partial<Omit<FarmData, "aiLogs" | "updateCropEntries" | "updateSetupField" | "advanceSetup" | "addAILog" | "toggleTagAILog" | "resetFarm">>) => void;
+  updateSetupField: (
+    field: Partial<
+      Omit<
+        FarmData,
+        | "aiLogs"
+        | "diseaseScans"
+        | "updateCropEntries"
+        | "updateSetupField"
+        | "advanceSetup"
+        | "addAILog"
+        | "toggleTagAILog"
+        | "addDiseaseScan"
+        | "updateScanStatus"
+        | "resetFarm"
+      >
+    >
+  ) => void;
   advanceSetup: (step: number) => void;
   addAILog: (entry: Omit<AILogEntry, "id" | "date">) => void;
   toggleTagAILog: (id: string) => void;
+  addDiseaseScan: (entry: Omit<DiseaseScan, "id" | "date" | "status">) => void;
+  updateScanStatus: (id: string, status: DiseaseScan["status"]) => void;
   resetFarm: () => void;
 };
 
@@ -55,6 +87,7 @@ const DEFAULTS = {
   setupStep: 0,
   setupComplete: false,
   aiLogs: [],
+  diseaseScans: [],
 };
 
 export const useFarmStore = create<FarmData>()(
@@ -72,11 +105,7 @@ export const useFarmStore = create<FarmData>()(
       addAILog: (entry) =>
         set((s) => ({
           aiLogs: [
-            {
-              id: crypto.randomUUID(),
-              date: new Date().toISOString(),
-              ...entry,
-            },
+            { id: crypto.randomUUID(), date: new Date().toISOString(), ...entry },
             ...s.aiLogs.slice(0, 99), // keep last 100
           ],
         })),
@@ -85,6 +114,26 @@ export const useFarmStore = create<FarmData>()(
         set((s) => ({
           aiLogs: s.aiLogs.map((l) =>
             l.id === id ? { ...l, tagged: !l.tagged } : l
+          ),
+        })),
+
+      addDiseaseScan: (entry) =>
+        set((s) => ({
+          diseaseScans: [
+            {
+              id: crypto.randomUUID(),
+              date: new Date().toISOString(),
+              status: "Detected" as const,
+              ...entry,
+            },
+            ...s.diseaseScans.slice(0, 49),
+          ],
+        })),
+
+      updateScanStatus: (id, status) =>
+        set((s) => ({
+          diseaseScans: s.diseaseScans.map((d) =>
+            d.id === id ? { ...d, status } : d
           ),
         })),
 

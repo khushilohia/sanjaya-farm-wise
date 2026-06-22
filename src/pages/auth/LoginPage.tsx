@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthLayout } from "@/app/layouts/AuthLayout";
-import { loginUser } from "@/api/serverFns";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
@@ -23,7 +22,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const authenticate = useAuthStore((s) => s.authenticate);
   const [loading, setLoading] = useState(false);
 
   const {
@@ -37,9 +36,8 @@ export function LoginPage() {
   async function onSubmit(data: LoginForm) {
     setLoading(true);
     try {
-      const result = await loginUser({ data });
-      login(result.user);
-      toast.success(`Welcome back, ${result.user.name}!`);
+      const user = await authenticate(data.phone, data.password);
+      toast.success(`Welcome back, ${user.name}!`);
       navigate({ to: "/dashboard" });
     } catch (err: unknown) {
       const message =

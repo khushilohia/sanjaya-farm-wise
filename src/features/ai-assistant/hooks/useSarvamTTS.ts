@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { sarvamTTS } from "@/api/serverFns";
 
 const LANG_MAP: Record<string, string> = {
@@ -17,53 +17,77 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-function browserSpeak(text: string, language: string): Promise<void> {
-  return new Promise<void>((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_MAP[language] ?? "en-IN";
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve(); // never hang on error
-    speechSynthesis.cancel(); // clear queue
-    speechSynthesis.speak(utterance);
-    // Safety fallback: resolve after duration estimate so we never block
-    setTimeout(resolve, Math.max(3000, text.length * 70));
-  });
-}
-
-async function playBase64Audio(base64: string): Promise<void> {
-  const audio = new Audio(`data:audio/wav;base64,${base64}`);
-  await audio.play();
-  return withTimeout(
-    new Promise<void>((resolve) => {
-      audio.onended = () => resolve();
-      audio.onerror = () => resolve();
-    }),
-    20_000
-  );
-}
-
 export function useSarvamTTS() {
-  const speak = useCallback(async (text: string, language: string) => {
-    try {
-      const result = await withTimeout(
-        sarvamTTS({ data: { text, language } }),
-        30_000 // longer timeout for chunked requests
-      );
-      if (result.audios && result.audios.length > 0) {
-        for (const audioBase64 of result.audios) {
-          try {
-            await playBase64Audio(audioBase64);
-          } catch {
-            // chunk playback failed — skip to next chunk
-          }
-        }
-        return;
-      }
-    } catch {
-      // Sarvam unavailable or timed out — fall through to browser TTS
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const cancelledRef = useRef(false);
+
+  const stop = useCallback(() => {
+    cancelledRef.current = true;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
-    await browserSpeak(text, language);
+    if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
   }, []);
 
-  return { speak };
+  const playBase64 = useCallback((base64: string): Promise<void> => {
+    return withTimeout(
+      new Promise<void>((resolve) => {
+        const audio = new Audio(`data:audio/wav;base64,${base64}`);
+        audioRef.current = audio;
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        audio.play().catch(() => resolve());
+      }),
+      25_000
+    );
+  }, []);
+
+  const browserSpeak = useCallback(
+    (text: string, language: string): Promise<void> => {
+      return new Promise<void>((resolve) => {
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = LANG_MAP[language] ?? "en-IN";
+          utterance.onend = () => resolve();
+          utterance.onerror = () => resolve();
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utterance);
+          setTimeout(resolve, Math.max(3000, text.length * 70));
+        } catch {
+          resolve();
+        }
+      });
+    },
+    []
+  );
+
+  const speak = useCallback(
+    async (text: string, language: string) => {
+      cancelledRef.current = false;
+      try {
+        const result = await withTimeout(
+          sarvamTTS({ data: { text, language } }),
+          30_000
+        );
+        if (result.audios && result.audios.length > 0) {
+          for (const audioBase64 of result.audios) {
+            if (cancelledRef.current) return;
+            try {
+              await playBase64(audioBase64);
+            } catch {
+              /* skip failed chunk */
+            }
+          }
+          return;
+        }
+      } catch {
+        /* Sarvam unavailable — fall back to browser TTS */
+      }
+      if (!cancelledRef.current) await browserSpeak(text, language);
+    },
+    [playBase64, browserSpeak]
+  );
+
+  return { speak, stop };
 }

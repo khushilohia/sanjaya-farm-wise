@@ -17,8 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AuthLayout } from "@/app/layouts/AuthLayout";
-import { registerUser } from "@/api/serverFns";
 import { useAuthStore } from "@/store/authStore";
+import { useFarmStore } from "@/store/farmStore";
 
 const CROP_OPTIONS = [
   "Cardamom",
@@ -56,7 +56,8 @@ type AllData = Step1Form & Step2Form & { crops: string[]; language: string };
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
+  const updateSetupField = useFarmStore((s) => s.updateSetupField);
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Form | null>(null);
   const [step2Data, setStep2Data] = useState<Step2Form | null>(null);
@@ -102,19 +103,22 @@ export function RegisterPage() {
     };
     setLoading(true);
     try {
-      const result = await registerUser({
-        data: {
-          name: allData.name,
-          phone: allData.phone,
-          village: allData.village,
-          farmSize: allData.farmSize,
-          crops: allData.crops,
-          language: allData.language,
-          password: allData.password,
-        },
+      const user = await register({
+        name: allData.name,
+        phone: allData.phone,
+        village: allData.village,
+        farmSize: allData.farmSize,
+        crops: allData.crops,
+        language: allData.language,
+        password: allData.password,
       });
-      login(result.user);
-      toast.success(`Welcome, ${result.user.name}! Your farm is registered.`);
+      // Carry the registration details into the farm profile so the
+      // dashboard, soil and assistant pages have context from day one.
+      updateSetupField({
+        soilType: allData.soilType,
+        irrigationSource: allData.irrigation,
+      });
+      toast.success(`Welcome, ${user.name}! Your farm is registered.`);
       navigate({ to: "/dashboard" });
     } catch (err: unknown) {
       const message =

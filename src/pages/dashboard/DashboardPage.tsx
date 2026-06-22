@@ -51,7 +51,7 @@ function SetupWizard() {
           stage: "",
           progress: 0,
           plantedDate: "",
-          areAcres: "",
+          areaAcres: "",
         }))
   );
 
@@ -152,10 +152,10 @@ function SetupWizard() {
                       <Input
                         type="number"
                         placeholder="e.g. 1.5"
-                        value={crop.areAcres}
+                        value={crop.areaAcres}
                         onChange={(e) =>
                           setDraftCrops((d) =>
-                            d.map((c, idx) => (idx === i ? { ...c, areAcres: e.target.value } : c))
+                            d.map((c, idx) => (idx === i ? { ...c, areaAcres: e.target.value } : c))
                           )
                         }
                         className="text-sm"
@@ -188,7 +188,7 @@ function SetupWizard() {
                 onClick={() =>
                   setDraftCrops((d) => [
                     ...d,
-                    { name: "", stage: "", progress: 0, plantedDate: "", areAcres: "" },
+                    { name: "", stage: "", progress: 0, plantedDate: "", areaAcres: "" },
                   ])
                 }
               >
@@ -427,7 +427,7 @@ export function DashboardPage() {
                   </div>
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     {cropEntries.map((crop) => (
-                      <CropRow key={crop.name} name={crop.name} stage={crop.stage} progress={crop.progress} area={`${crop.areAcres} acres`} />
+                      <CropRow key={crop.name} name={crop.name} stage={crop.stage} progress={crop.progress} area={`${crop.areaAcres} acres`} />
                     ))}
                   </div>
                 </Card>
