@@ -18,6 +18,9 @@ dist-ssr
 .env
 .env.*
 
+# Vercel build output (generated at deploy time, not committed)
+.vercel/output
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
