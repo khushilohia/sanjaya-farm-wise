@@ -1,40 +1,42 @@
-import { useState } from "react";
-import {
-  Bot,
-  CloudSun,
-  TrendingUp,
-  Camera,
-  Landmark,
-  Users,
-  QrCode,
-  Smartphone,
-  CreditCard,
-  WifiOff,
-  Leaf,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Bot, CloudSun, TrendingUp, Camera, Landmark, Bell, LogIn, Leaf } from "lucide-react";
 import VoiceButton from "@/frontend/components/voice/VoiceButton";
-import { LANGUAGES, type Lang } from "@/lib/i18n";
+import { LANGUAGES } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n";
+import { useAuthStore } from "@/frontend/store/authStore";
 
 const TILES = [
-  { label: "Ask AI", icon: Bot, color: "bg-primary text-primary-foreground" },
-  { label: "Weather", icon: CloudSun, color: "bg-sky/80 text-white" },
-  { label: "Market Prices", icon: TrendingUp, color: "bg-harvest/80 text-harvest-foreground" },
-  { label: "Disease Scan", icon: Camera, color: "bg-destructive/80 text-white" },
-  { label: "Schemes", icon: Landmark, color: "bg-soil/80 text-white" },
-  { label: "Community", icon: Users, color: "bg-muted text-muted-foreground" },
-];
-
-const LOGIN_METHODS = [
-  { label: "QR Scan", icon: QrCode },
-  { label: "Mobile OTP", icon: Smartphone },
-  { label: "Farmer ID", icon: CreditCard },
+  { label: "Ask AI", icon: Bot, to: "/assistant", color: "bg-primary text-primary-foreground" },
+  { label: "Weather", icon: CloudSun, to: "/weather", color: "bg-sky/80 text-white" },
+  {
+    label: "Market Prices",
+    icon: TrendingUp,
+    to: "/market",
+    color: "bg-harvest/80 text-harvest-foreground",
+  },
+  {
+    label: "Disease Scan",
+    icon: Camera,
+    to: "/disease-detection",
+    color: "bg-destructive/80 text-white",
+  },
+  { label: "Schemes", icon: Landmark, to: "/schemes", color: "bg-soil/80 text-white" },
+  { label: "Alerts", icon: Bell, to: "/alerts", color: "bg-muted text-muted-foreground" },
 ];
 
 export function KioskPage() {
-  const [listening, setListening] = useState(false);
-  const [lang, setLang] = useState<Lang>("en");
+  const navigate = useNavigate();
+  const { lang, setLang } = useLang();
+  const user = useAuthStore((s) => s.user);
+  const [now, setNow] = useState(() => new Date());
 
-  const now = new Date();
+  // Live clock — a kiosk screen stays open all day.
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
   const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
   const dateStr = now.toLocaleDateString("en-IN", {
     weekday: "long",
@@ -56,7 +58,7 @@ export function KioskPage() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          {/* Language switcher */}
+          {/* Language switcher — changes the whole app language */}
           <div className="flex gap-2">
             {LANGUAGES.map((l) => (
               <button
@@ -80,26 +82,18 @@ export function KioskPage() {
         </div>
       </div>
 
-      {/* Offline indicator */}
-      <div className="flex items-center justify-end gap-2 px-8 py-2 bg-muted/30">
-        <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Offline mode available</span>
-      </div>
-
       {/* Main content */}
       <div className="flex flex-1 flex-col items-center px-8 py-8 gap-10">
-        {/* Central voice button */}
+        {/* Central voice button — opens the real voice assistant */}
         <div className="flex flex-col items-center gap-6">
           <VoiceButton
             size="xl"
-            listening={listening}
-            onClick={() => setListening((v) => !v)}
-            label={listening ? "Listening... tap to stop" : "Press to speak"}
+            listening={false}
+            onClick={() => navigate({ to: "/assistant" })}
+            label="Press to speak"
           />
           <p className="text-center text-base text-muted-foreground max-w-xs">
-            {listening
-              ? "Sanjaya is listening. Ask anything about your farm."
-              : "Tap the button and ask about weather, crops, diseases, or schemes."}
+            Tap the button and ask about weather, crops, diseases, or schemes — in your language.
           </p>
         </div>
 
@@ -108,39 +102,35 @@ export function KioskPage() {
           {TILES.map((tile) => {
             const Icon = tile.icon;
             return (
-              <button
+              <Link
                 key={tile.label}
-                type="button"
+                to={tile.to}
                 className={`flex flex-col items-center justify-center gap-4 rounded-2xl p-6 text-center transition-all active:scale-95 ${tile.color}`}
                 style={{ minHeight: "200px" }}
               >
                 <Icon className="h-16 w-16" strokeWidth={1.5} />
                 <span className="text-2xl font-semibold">{tile.label}</span>
-              </button>
+              </Link>
             );
           })}
         </div>
 
-        {/* Login methods */}
-        <div className="w-full max-w-3xl">
-          <div className="mb-4 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Login to your farmer profile
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {LOGIN_METHODS.map((method) => {
-              const Icon = method.icon;
-              return (
-                <button
-                  key={method.label}
-                  type="button"
-                  className="flex items-center justify-center gap-3 rounded-xl border-2 border-border/60 bg-card px-4 py-4 text-sm font-semibold transition-all hover:border-primary/40 hover:bg-primary/5 active:scale-95"
-                >
-                  <Icon className="h-5 w-5 text-primary" />
-                  {method.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Login / current farmer */}
+        <div className="w-full max-w-3xl pb-8">
+          {user ? (
+            <div className="text-center text-sm text-muted-foreground">
+              Logged in as <span className="font-semibold text-foreground">{user.name}</span>
+              {user.village ? ` — ${user.village}` : ""}
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="mx-auto flex max-w-md items-center justify-center gap-3 rounded-xl border-2 border-border/60 bg-card px-4 py-4 text-base font-semibold transition-all hover:border-primary/40 hover:bg-primary/5 active:scale-95"
+            >
+              <LogIn className="h-5 w-5 text-primary" />
+              Login with your phone number
+            </Link>
+          )}
         </div>
       </div>
     </div>

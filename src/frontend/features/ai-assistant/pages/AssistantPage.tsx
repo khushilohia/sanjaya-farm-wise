@@ -11,7 +11,9 @@ import {
   Square,
   Trash2,
   Send,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { AuthGuard } from "@/frontend/app/guards/AuthGuard";
 import { AppLayout } from "@/frontend/app/layouts/AppLayout";
 import { VoiceOrb, type OrbState } from "@/frontend/features/ai-assistant/components/VoiceOrb";
@@ -73,6 +75,35 @@ const STARTERS: Record<string, string[]> = {
 };
 
 type Message = { role: "user" | "assistant"; content: string };
+
+// Deep links shown under an assistant answer when it mentions these topics.
+// Keywords cover English + Hindi/Nepali/Bengali terms the model actually uses.
+const ANSWER_LINKS: { to: string; label: string; pattern: RegExp }[] = [
+  {
+    to: "/schemes",
+    label: "Check scheme eligibility",
+    pattern: /scheme|yojana|pm-?kisan|pmfby|kisan credit|insurance|योजना|बीमा|ऋण|প্রকল্প|বীমা/i,
+  },
+  {
+    to: "/market",
+    label: "See mandi prices",
+    pattern: /price|mandi|market|₹|quintal|दाम|मूल्य|भाव|मंडी|बजार|बाजार|दर|দাম|বাজার/i,
+  },
+  {
+    to: "/weather",
+    label: "View weather forecast",
+    pattern: /rain|weather|forecast|monsoon|frost|बारिश|वर्षा|मौसम|पानी पर्ने|বৃষ্টি|আবহাওয়া/i,
+  },
+  {
+    to: "/soil",
+    label: "View soil report",
+    pattern: /soil|ph\b|nitrogen|माटो|मिट्टी|मृदा|মাটি/i,
+  },
+];
+
+function answerLinks(content: string) {
+  return ANSWER_LINKS.filter((l) => l.pattern.test(content)).slice(0, 2);
+}
 
 export function AssistantPage() {
   const user = useAuthStore((s) => s.user);
@@ -383,6 +414,19 @@ export function AssistantPage() {
                       </div>
                     )}
                     {m.content}
+                    {m.role === "assistant" && answerLinks(m.content).length > 0 && (
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        {answerLinks(m.content).map((l) => (
+                          <Link
+                            key={l.to}
+                            to={l.to}
+                            className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                          >
+                            {l.label} <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

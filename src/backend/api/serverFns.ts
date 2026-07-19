@@ -479,3 +479,77 @@ Notes ("note") in ${langLabel(data.language)}. Prices are realistic estimates fo
       return { source: "estimated" as const, records: [] };
     }
   });
+
+// Price history for one commodity — recent Agmarknet records averaged per day,
+// AI-estimated weekly series as fallback. Powers the trend chart.
+export const fetchPriceHistory = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      commodity: z.string().min(1),
+      state: z.string().default(""),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const key = process.env.DATA_GOV_IN_API_KEY;
+
+    if (key) {
+      try {
+        const params = new URLSearchParams({
+          "api-key": key,
+          format: "json",
+          limit: "100",
+          "filters[commodity]": data.commodity,
+        });
+        if (data.state) params.set("filters[state]", data.state);
+        const res = await fetch(
+          `https://api.data.gov.in/resource/${AGMARK_RESOURCE}?${params.toString()}`,
+          { signal: AbortSignal.timeout(8000) },
+        );
+        if (res.ok) {
+          const json = (await res.json()) as {
+            records?: Array<Record<string, string>>;
+          };
+          const byDate = new Map<string, number[]>();
+          for (const r of json.records ?? []) {
+            const price = Number(r.modal_price);
+            if (!price || !r.arrival_date) continue;
+            const list = byDate.get(r.arrival_date) ?? [];
+            list.push(price);
+            byDate.set(r.arrival_date, list);
+          }
+          const points = [...byDate.entries()]
+            .map(([date, prices]) => ({
+              date,
+              price: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+            }))
+            // arrival_date is DD/MM/YYYY — sort chronologically
+            .sort((a, b) =>
+              a.date
+                .split("/")
+                .reverse()
+                .join("")
+                .localeCompare(b.date.split("/").reverse().join("")),
+            );
+          if (points.length >= 3) {
+            return { source: "live" as const, points };
+          }
+        }
+      } catch {
+        // fall through to AI estimate
+      }
+    }
+
+    const prompt = `You are an Indian agricultural market analyst. Give a realistic indicative wholesale mandi price trend for ${data.commodity} in ${data.state || "Northeast India / Sikkim"} over the last 8 weeks, ₹ per quintal, ending this week. Reflect the real seasonal direction of this crop's price.
+Respond ONLY with minified JSON, no markdown:
+{"points":[{"date":"early June","price":number}, ...8 points...]}`;
+    try {
+      const raw = await callOpenRouter([{ role: "user", content: prompt }], { maxTokens: 400 });
+      const match = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(match ? match[0] : raw) as {
+        points: Array<{ date: string; price: number }>;
+      };
+      return { source: "estimated" as const, points: parsed.points ?? [] };
+    } catch {
+      return { source: "estimated" as const, points: [] };
+    }
+  });

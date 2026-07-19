@@ -20,6 +20,20 @@ _Updated: 2026-07-19 (supersedes the morning audit; Phases A, B, C1–2, D1 done
 | Community | ❌ Static | Acceptable for now (per original plan). |
 | Admin | ❌ Static | Only matters once there are real users. |
 
+## Page elevation ideas (UX roadmap, 2026-07-20)
+
+Small, high-impact additions per page. Items marked ✅ are done.
+
+- **Assistant** — ✅ context-aware advice (soil/prices/schemes fed in), ✅ deep-link chips under answers ("See mandi prices", "Check scheme eligibility"). Next: tappable follow-up suggestion chips after each answer; save/share an answer.
+- **Market** — ✅ commodity search, ✅ price trend chart. Next: "best day to sell" hint from the trend; compare two mandis side by side; price alert ("tell me when ginger crosses ₹X" — needs alert delivery).
+- **Weather** — has rainfall history + derived alerts. Next: 7-day temperature band chart (same inline-SVG pattern as market trend); spray/irrigation window strip (colored day squares); yesterday-vs-today comparison line.
+- **Soil** — has gauge + AI plan. Next: radar/bar comparing each nutrient vs ideal range for the farmer's main crop; "retest reminder" (soil data is satellite-static, so show sample-collection guidance instead).
+- **Dashboard** — add a "today at a glance" strip (weather icon + top alert + top price move) so the farmer sees everything without visiting 3 pages; harvest countdown per crop from `cropEntries` progress.
+- **Schemes** — show a deadline/documents checklist per eligible scheme; a "documents you'll need" accordion (Aadhaar, land record, bank passbook).
+- **Disease detection** — history of past scans (already stored in farm data?); side-by-side healthy-vs-diseased reference photos for common local crops.
+- **Alerts** — group by crop; per-alert "ask Sanjaya about this" button that opens the assistant pre-filled with the alert.
+- **Kiosk** — ✅ working launcher (tiles navigate, voice opens assistant, app-wide language switch, live clock, login state). Next: idle timeout that auto-logs-out and returns to /kiosk (shared village device).
+
 ## Remaining work (priority order)
 
 1. **Alert delivery** — SMS/voice/push. Data layer exists (weather-derived alerts); needs a delivery channel (e.g. Twilio/MSG91) and a scheduled job.

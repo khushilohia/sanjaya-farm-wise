@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Store, Truck, Sparkles, BadgeCheck } from "lucide-react";
+import { TrendingUp, Store, Truck, Sparkles, BadgeCheck, Search } from "lucide-react";
 import { AuthGuard } from "@/frontend/app/guards/AuthGuard";
-import { fetchMarketPrices } from "@/backend/api/serverFns";
+import { fetchMarketPrices, fetchPriceHistory } from "@/backend/api/serverFns";
 import { useAuthStore } from "@/frontend/store/authStore";
 import { AppLayout } from "@/frontend/app/layouts/AppLayout";
 import { SectionHeading } from "@/frontend/components/layout/SectionHeading";
@@ -68,6 +68,46 @@ function formatPrice(value: number | null | undefined): string {
   return value == null ? "—" : `₹${Math.round(value).toLocaleString("en-IN")}`;
 }
 
+function TrendChart({ points }: { points: { date: string; price: number }[] }) {
+  const W = 600;
+  const H = 140;
+  const PAD = 8;
+  const prices = points.map((p) => p.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const x = (i: number) => PAD + (i / (points.length - 1)) * (W - PAD * 2);
+  const y = (p: number) => H - PAD - ((p - min) / range) * (H - PAD * 2);
+  const line = points.map((p, i) => `${x(i)},${y(p.price)}`).join(" ");
+  const rising = prices[prices.length - 1] >= prices[0];
+  const color = rising ? "hsl(var(--primary))" : "hsl(var(--destructive))";
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Price trend chart">
+        <polygon
+          points={`${x(0)},${H - PAD} ${line} ${x(points.length - 1)},${H - PAD}`}
+          fill={color}
+          opacity={0.08}
+        />
+        <polyline points={line} fill="none" stroke={color} strokeWidth={2.5} />
+        {points.map((p, i) => (
+          <circle key={i} cx={x(i)} cy={y(p.price)} r={3} fill={color}>
+            <title>{`${p.date}: ${formatPrice(p.price)}/quintal`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+        <span>{points[0]?.date}</span>
+        <span className={rising ? "font-medium text-primary" : "font-medium text-destructive"}>
+          {rising ? "▲" : "▼"} {formatPrice(prices[0])} → {formatPrice(prices[prices.length - 1])}
+        </span>
+        <span>{points[points.length - 1]?.date}</span>
+      </div>
+    </div>
+  );
+}
+
 export function MarketPage() {
   const user = useAuthStore((s) => s.user);
   const [listingSubmitted, setListingSubmitted] = useState(false);
@@ -76,6 +116,9 @@ export function MarketPage() {
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
   const [availability, setAvailability] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [searched, setSearched] = useState(""); // submitted search term
 
   const pricesQuery = useQuery({
     queryKey: ["market-prices", user?.crops ?? []],
@@ -90,7 +133,33 @@ export function MarketPage() {
       }),
     staleTime: 1000 * 60 * 30,
   });
-  const priceRecords = (pricesQuery.data?.records ?? []) as PriceRecord[];
+
+  const searchQuery = useQuery({
+    queryKey: ["market-search", searched],
+    queryFn: () =>
+      fetchMarketPrices({
+        data: {
+          state: "",
+          commodity: searched,
+          crops: [searched],
+          language: user?.language ?? "en",
+        },
+      }),
+    enabled: Boolean(searched),
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const activeQuery = searched ? searchQuery : pricesQuery;
+  const priceRecords = (activeQuery.data?.records ?? []) as PriceRecord[];
+
+  // Trend chart follows the search, else the farmer's first crop / first record.
+  const trendCommodity = searched || user?.crops?.[0] || priceRecords[0]?.commodity || "";
+  const historyQuery = useQuery({
+    queryKey: ["price-history", trendCommodity],
+    queryFn: () => fetchPriceHistory({ data: { commodity: trendCommodity, state: "" } }),
+    enabled: Boolean(trendCommodity),
+    staleTime: 1000 * 60 * 60,
+  });
 
   function handleListNow() {
     if (!crop || !quantity) return;
@@ -109,25 +178,62 @@ export function MarketPage() {
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
             <Card className="border-border/60 bg-card p-6 lg:col-span-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-                {pricesQuery.data?.source === "live" ? "Live mandi prices" : "Market prices"}
-                {pricesQuery.data?.source === "estimated" && (
+                {activeQuery.data?.source === "live" ? "Live mandi prices" : "Market prices"}
+                {activeQuery.data?.source === "estimated" && (
                   <Badge className="bg-harvest/15 text-harvest-foreground border-harvest/20 text-xs normal-case tracking-normal">
                     AI estimate — live feed unavailable
                   </Badge>
                 )}
               </div>
+
+              {/* Commodity search */}
+              <form
+                className="mt-4 flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setSearched(search.trim());
+                }}
+              >
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search any crop — e.g. Turmeric, Potato, Maize…"
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="gap-1.5"
+                  disabled={!search.trim()}
+                >
+                  <Search className="h-4 w-4" /> Search
+                </Button>
+                {searched && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setSearch("");
+                      setSearched("");
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </form>
+
               <div className="mt-4 space-y-3">
-                {pricesQuery.isLoading && (
+                {activeQuery.isLoading && (
                   <div className="py-8 text-center text-sm text-muted-foreground">
                     Loading current prices…
                   </div>
                 )}
-                {pricesQuery.isError && (
+                {activeQuery.isError && (
                   <div className="py-8 text-center text-sm text-destructive">
                     Could not load market prices. Please try again later.
                   </div>
                 )}
-                {!pricesQuery.isLoading && !pricesQuery.isError && priceRecords.length === 0 && (
+                {!activeQuery.isLoading && !activeQuery.isError && priceRecords.length === 0 && (
                   <div className="py-8 text-center text-sm text-muted-foreground">
                     No price data available right now.
                   </div>
@@ -161,6 +267,40 @@ export function MarketPage() {
                 ))}
               </div>
             </Card>
+
+            {/* Price trend chart */}
+            {trendCommodity && (
+              <Card className="border-border/60 bg-card p-6 lg:col-span-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+                  <TrendingUp className="h-4 w-4" />
+                  {trendCommodity} price trend
+                  {historyQuery.data?.source === "estimated" && (
+                    <Badge className="bg-harvest/15 text-harvest-foreground border-harvest/20 text-xs normal-case tracking-normal">
+                      AI estimate
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-4">
+                  {historyQuery.isLoading && (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      Loading price trend…
+                    </div>
+                  )}
+                  {!historyQuery.isLoading && (historyQuery.data?.points?.length ?? 0) >= 2 ? (
+                    <TrendChart points={historyQuery.data!.points} />
+                  ) : (
+                    !historyQuery.isLoading && (
+                      <div className="py-8 text-center text-sm text-muted-foreground">
+                        No trend data available for {trendCommodity}.
+                      </div>
+                    )
+                  )}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Search a crop above to see its trend. ₹ per quintal, wholesale mandi rate.
+                </p>
+              </Card>
+            )}
           </div>
         </section>
 
