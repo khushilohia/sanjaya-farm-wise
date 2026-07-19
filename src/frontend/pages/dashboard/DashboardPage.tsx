@@ -26,10 +26,15 @@ import { Card } from "@/frontend/components/ui/card";
 import { Button } from "@/frontend/components/ui/button";
 import { Badge } from "@/frontend/components/ui/badge";
 import { Input } from "@/frontend/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/frontend/store/authStore";
 import { useFarmStore, type CropEntry } from "@/frontend/store/farmStore";
 import { useWeather } from "@/frontend/features/weather/hooks/useWeather";
 import { weatherCodeToEmoji, weatherCodeToLabel } from "@/frontend/features/weather/api/openmeteo";
+import { deriveAlerts } from "@/frontend/features/alerts/deriveAlerts";
+import { useFarmContext } from "@/frontend/features/ai-assistant/hooks/useFarmContext";
+import { askAI, fetchMarketPrices } from "@/backend/api/serverFns";
+import { CropIcon } from "@/frontend/lib/cropIcons";
 
 // ─── Setup wizard ────────────────────────────────────────────────────────────
 
@@ -349,6 +354,48 @@ export function DashboardPage() {
   const rainChance = current?.precipitation_probability ?? null;
   const humidity = current?.relative_humidity_2m ?? null;
 
+  // Today at a glance: top weather alert + top price for the farmer's crops.
+  const alerts = weather ? deriveAlerts(weather, crops) : [];
+  const topAlert = alerts[0] ?? null;
+  const { data: market } = useQuery({
+    queryKey: ["market-prices", user?.crops ?? []],
+    queryFn: () =>
+      fetchMarketPrices({
+        data: { state: "Sikkim", commodity: "", crops, language: user?.language ?? "en" },
+      }),
+    staleTime: 1000 * 60 * 30,
+    enabled: crops.length > 0,
+  });
+  const topPrice = (market?.records?.[0] ?? null) as {
+    commodity?: string;
+    modalPrice?: number;
+    trend?: string;
+  } | null;
+
+  // "This week on your farm" — personalized crop-calendar tasks from the AI,
+  // refreshed daily (cached in react-query).
+  const farmContext = useFarmContext();
+  const tasksQuery = useQuery({
+    queryKey: ["weekly-tasks", user?.crops ?? [], new Date().toDateString()],
+    queryFn: () =>
+      askAI({
+        data: {
+          question:
+            "List exactly 3 short farm tasks I should do this week based on my crops, their stage, the weather ahead and the season. One per line, numbered 1. 2. 3. — nothing else, no intro.",
+          context: farmContext,
+          language: user?.language ?? "en",
+        },
+      }),
+    enabled: Boolean(user) && cropEntries.length > 0,
+    staleTime: 1000 * 60 * 60 * 12,
+    retry: 1,
+  });
+  const weeklyTasks = ((tasksQuery.data as { answer?: string } | undefined)?.answer ?? "")
+    .split("\n")
+    .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
   // Dynamic AI advice based on real data
   const irrigationAdvice =
     rainChance !== null
@@ -407,11 +454,78 @@ export function DashboardPage() {
                   key={crop}
                   className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
                 >
+                  <CropIcon name={crop} className="mr-1" />
                   {crop}
                 </span>
               ))}
             </div>
           )}
+
+          {/* Today at a glance */}
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <Link
+              to="/weather"
+              className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-3.5 transition-colors hover:border-primary/40"
+            >
+              <span className="text-2xl">
+                {current ? weatherCodeToEmoji(current.weather_code) : "⛅"}
+              </span>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate">
+                  {current
+                    ? `${Math.round(current.temperature_2m)}°C — ${weatherCodeToLabel(current.weather_code)}`
+                    : "Weather"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {rainChance !== null ? `${rainChance}% rain chance today` : "Tap for forecast"}
+                </div>
+              </div>
+            </Link>
+            <Link
+              to="/alerts"
+              className={`flex items-center gap-3 rounded-xl border p-3.5 transition-colors hover:border-primary/40 ${
+                topAlert ? "border-destructive/30 bg-destructive/5" : "border-border/60 bg-card"
+              }`}
+            >
+              {topAlert ? (
+                <AlertTriangle className="h-6 w-6 shrink-0 text-destructive" />
+              ) : (
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-primary" />
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate">
+                  {topAlert ? topAlert.title : "No alerts today"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {topAlert
+                    ? `${alerts.length} active alert${alerts.length > 1 ? "s" : ""}`
+                    : "Conditions look normal"}
+                </div>
+              </div>
+            </Link>
+            <Link
+              to="/market"
+              className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-3.5 transition-colors hover:border-primary/40"
+            >
+              <TrendingUp className="h-6 w-6 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate">
+                  {topPrice?.commodity && topPrice.modalPrice
+                    ? `${topPrice.commodity}: ₹${Math.round(topPrice.modalPrice).toLocaleString("en-IN")}/qtl`
+                    : "Mandi prices"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {topPrice?.trend
+                    ? topPrice.trend === "up"
+                      ? "▲ Trending up"
+                      : topPrice.trend === "down"
+                        ? "▼ Trending down"
+                        : "→ Stable"
+                    : "Tap for all prices"}
+                </div>
+              </div>
+            </Link>
+          </div>
 
           {/* Setup wizard */}
           <div className="mt-8">
@@ -494,6 +608,37 @@ export function DashboardPage() {
                   </Link>
                 </Button>
               </Card>
+
+              {/* This week's tasks — personalized crop calendar */}
+              {cropEntries.length > 0 && (
+                <Card className="border-border/60 p-6">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+                    <CalendarCheck className="h-3.5 w-3.5" /> This week on your farm
+                  </div>
+                  <div className="mt-4 space-y-2.5">
+                    {tasksQuery.isLoading && (
+                      <div className="space-y-2">
+                        <div className="h-5 animate-pulse rounded bg-muted" />
+                        <div className="h-5 animate-pulse rounded bg-muted w-4/5" />
+                        <div className="h-5 animate-pulse rounded bg-muted w-3/5" />
+                      </div>
+                    )}
+                    {!tasksQuery.isLoading && weeklyTasks.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Task suggestions unavailable right now.
+                      </p>
+                    )}
+                    {weeklyTasks.map((task, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-sm">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          {i + 1}
+                        </span>
+                        <span>{task}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
 
               {/* Crop progress — only if setup done */}
               {cropEntries.length > 0 ? (
@@ -646,7 +791,10 @@ function CropRow({
   return (
     <div className="rounded-xl border border-border/60 p-4">
       <div className="flex items-baseline justify-between">
-        <div className="font-semibold">{name}</div>
+        <div className="font-semibold">
+          <CropIcon name={name} className="mr-1.5" />
+          {name}
+        </div>
         <div className="text-xs text-muted-foreground">{area}</div>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{stage}</div>

@@ -12,6 +12,7 @@ Copy `.env.example` and fill in:
 | `DATABASE_URL` | prod | `libsql://…` (Turso). Defaults to local SQLite file |
 | `DATABASE_AUTH_TOKEN` | prod | Turso auth token |
 | `DATA_GOV_IN_API_KEY` | no | Live Agmarknet mandi prices (AI-estimate fallback without it) |
+| `ADMIN_PHONES` | no | Comma-separated phone numbers with super-admin access to `/admin` |
 
 ## Vercel (default)
 

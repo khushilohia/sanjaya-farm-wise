@@ -416,6 +416,117 @@ export function LandingPage() {
       </section>
 
       {/* Trust strip */}
+      {/* Pricing */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+              Pricing
+            </div>
+            <h2 className="mt-3 font-display text-4xl font-semibold">
+              Free for every farmer. Forever.
+            </h2>
+            <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+              All core features are free. Pro adds unlimited scans and personalized planning.
+              Village entrepreneurs can run Sanjaya as a kiosk business.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+            {[
+              {
+                name: "Kisan (Free)",
+                price: "₹0",
+                period: "forever",
+                highlight: false,
+                cta: "Get started free",
+                to: "/register",
+                features: [
+                  "AI voice assistant in 4 languages",
+                  "5 disease photo scans / month",
+                  "Live weather + farm alerts",
+                  "Mandi prices + trend charts",
+                  "Govt scheme eligibility check",
+                  "Soil health report",
+                ],
+              },
+              {
+                name: "Kisan Pro",
+                price: "₹99",
+                period: "/month · or ₹999/year",
+                highlight: true,
+                cta: "Coming soon",
+                to: "/register",
+                features: [
+                  "Everything in Free",
+                  "Unlimited disease scans",
+                  "Personalized weekly crop calendar",
+                  "SMS alerts for price spikes & weather",
+                  "Priority AI answers",
+                  "Expert callback support",
+                ],
+              },
+              {
+                name: "Kiosk Partner",
+                price: "₹2,999",
+                period: "/year per village kiosk",
+                highlight: false,
+                cta: "Contact us",
+                to: "/register",
+                features: [
+                  "Voice-first kiosk mode for shared use",
+                  "Serve unlimited farmers per kiosk",
+                  "Partner earnings on input referrals",
+                  "Multi-farmer profile switching",
+                  "Onboarding & training support",
+                ],
+              },
+            ].map((tier) => (
+              <Card
+                key={tier.name}
+                className={`relative flex flex-col p-6 ${
+                  tier.highlight ? "border-primary shadow-lg shadow-primary/10" : "border-border/60"
+                }`}
+              >
+                {tier.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">
+                    Most popular
+                  </span>
+                )}
+                <div className="text-sm font-semibold uppercase tracking-widest text-primary">
+                  {tier.name}
+                </div>
+                <div className="mt-3 flex items-baseline gap-1.5">
+                  <span className="font-display text-4xl font-bold">{tier.price}</span>
+                  <span className="text-sm text-muted-foreground">{tier.period}</span>
+                </div>
+                <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  asChild
+                  className={`mt-6 w-full ${
+                    tier.highlight
+                      ? "bg-primary hover:bg-primary/90"
+                      : "bg-muted text-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  <Link to={tier.to}>{tier.cta}</Link>
+                </Button>
+              </Card>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Pro and Kiosk Partner plans are launching soon — today every feature is free while we
+            grow with our first villages.
+          </p>
+        </div>
+      </section>
+
       <section className="border-y border-border/60 bg-card py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">

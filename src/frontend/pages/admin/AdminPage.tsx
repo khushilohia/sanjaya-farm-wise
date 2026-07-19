@@ -1,11 +1,13 @@
-import { ShieldCheck, TrendingUp, Bug, Users, Activity } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ShieldCheck, ShieldOff, Bot } from "lucide-react";
 import { AuthGuard } from "@/frontend/app/guards/AuthGuard";
 import { AppLayout } from "@/frontend/app/layouts/AppLayout";
 import { SectionHeading } from "@/frontend/components/layout/SectionHeading";
-import { IconCard } from "@/frontend/components/cards/IconCard";
 import { StatCard } from "@/frontend/components/cards/StatCard";
 import { Card } from "@/frontend/components/ui/card";
 import { Badge } from "@/frontend/components/ui/badge";
+import { getAdminOverview } from "@/backend/api/adminFns";
+import { CropIcon } from "@/frontend/lib/cropIcons";
 import {
   Table,
   TableBody,
@@ -15,79 +17,29 @@ import {
   TableRow,
 } from "@/frontend/components/ui/table";
 
-const STATS = [
-  { label: "Total Farmers", value: "12,450", helper: "+320 this month", tone: "primary" },
-  { label: "Active Kiosks", value: "48", helper: "Across 4 districts", tone: "sky" },
-  { label: "Diseases Detected", value: "328", helper: "Last 30 days", tone: "soil" },
-  { label: "Schemes Applied", value: "1,240", helper: "85% approval rate", tone: "harvest" },
-] as const;
-
-const FARMERS = [
-  {
-    name: "Ramesh Rai",
-    village: "Rumtek",
-    crops: "Cardamom, Ginger",
-    lastActive: "Today",
-    status: "Active",
-  },
-  {
-    name: "Sunita Tamang",
-    village: "Ranipool",
-    crops: "Ginger, Rice",
-    lastActive: "Yesterday",
-    status: "Active",
-  },
-  {
-    name: "Bikash Sharma",
-    village: "Khamdong",
-    crops: "Cardamom",
-    lastActive: "3 days ago",
-    status: "Active",
-  },
-  {
-    name: "Purnima Basnet",
-    village: "Soreng",
-    crops: "Tea, Maize",
-    lastActive: "1 week ago",
-    status: "Inactive",
-  },
-  {
-    name: "Deepak Gurung",
-    village: "Gyalshing",
-    crops: "Cardamom, Ginger",
-    lastActive: "2 days ago",
-    status: "Active",
-  },
-];
-
-const DISTRICTS = [
-  { name: "East Sikkim", cases: 142, disease: "Capsule Rot", trend: "up" },
-  { name: "West Sikkim", cases: 98, disease: "Ginger Soft Rot", trend: "down" },
-  { name: "North Sikkim", cases: 45, disease: "Leaf Spot", trend: "stable" },
-];
-
-const FORECASTS = [
-  { crop: "Cardamom", season: "Kharif 2026", yield: "4,200 MT", change: "+8%" },
-  { crop: "Ginger", season: "Pre-monsoon 2026", yield: "12,500 MT", change: "+3%" },
-  { crop: "Rice", season: "Rabi 2026", yield: "28,000 MT", change: "-2%" },
-];
-
-const AI_CATEGORIES = [
-  { label: "Weather & irrigation", pct: 42 },
-  { label: "Disease identification", pct: 31 },
-  { label: "Scheme queries", pct: 27 },
-];
+function daysAgo(iso: string | null): string {
+  if (!iso) return "never synced";
+  const d = Math.floor((Date.now() - new Date(iso + "Z").getTime()) / 86_400_000);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+}
 
 export function AdminPage() {
+  const overview = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: () => getAdminOverview(),
+    retry: false,
+    staleTime: 1000 * 60 * 5,
+  });
+
   return (
     <AuthGuard>
       <AppLayout>
         <section className="container mx-auto px-4 py-16">
           <div className="flex items-center gap-3 mb-8">
             <SectionHeading
-              eyebrow="Admin dashboard"
-              title="Regional insights for officers"
-              subtitle="Monitor farmer adoption, disease outbreaks, and scheme distribution across districts."
+              eyebrow="Super admin"
+              title="Platform overview"
+              subtitle="Live data from the Sanjaya database — farmers, crops, and AI usage."
             />
             <div className="ml-auto shrink-0">
               <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1">
@@ -96,216 +48,174 @@ export function AdminPage() {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STATS.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-                helper={stat.helper}
-                tone={stat.tone}
-              />
-            ))}
-          </div>
-        </section>
+          {overview.isLoading && (
+            <div className="py-16 text-center text-sm text-muted-foreground">
+              Loading platform data…
+            </div>
+          )}
 
-        {/* Farmer management table */}
-        <section className="container mx-auto px-4 pb-16">
-          <SectionHeading
-            eyebrow="Farmer management"
-            title="Registered farmers"
-            subtitle="View active profiles, crops, and recent activity across your region."
-          />
-          <Card className="mt-6 border-border/60 bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Village</TableHead>
-                  <TableHead>Crops</TableHead>
-                  <TableHead>Last active</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {FARMERS.map((farmer) => (
-                  <TableRow key={farmer.name}>
-                    <TableCell className="font-medium">{farmer.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{farmer.village}</TableCell>
-                    <TableCell className="text-muted-foreground">{farmer.crops}</TableCell>
-                    <TableCell className="text-muted-foreground">{farmer.lastActive}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          farmer.status === "Active"
-                            ? "bg-primary/10 text-primary border-primary/20"
-                            : "bg-muted text-muted-foreground border-border"
-                        }
-                      >
-                        {farmer.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </section>
+          {overview.isError && (
+            <Card className="border-destructive/30 bg-destructive/5 p-8 text-center">
+              <ShieldOff className="mx-auto h-8 w-8 text-destructive" />
+              <p className="mt-3 font-semibold">Not authorized</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your account is not a super admin. Add your phone number to the{" "}
+                <code className="rounded bg-muted px-1">ADMIN_PHONES</code> environment variable
+                (comma-separated) and restart the server.
+              </p>
+            </Card>
+          )}
 
-        {/* Regional disease monitoring */}
-        <section className="bg-muted/40 py-16">
-          <div className="container mx-auto px-4">
-            <SectionHeading
-              eyebrow="Regional monitoring"
-              title="Disease heatmaps + early warnings"
-              subtitle="Identify hotspots and send preventive advisories before outbreaks spread."
-            />
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {DISTRICTS.map((d) => (
-                <Card key={d.name} className="border-border/60 bg-card p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">{d.name}</div>
-                    <span className="text-lg">
-                      {d.trend === "up" ? "↑" : d.trend === "down" ? "↓" : "→"}
-                    </span>
+          {overview.data && (
+            <>
+              {/* Live stats */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <StatCard
+                  label="Total farmers"
+                  value={String(overview.data.stats.totalFarmers)}
+                  helper={`+${overview.data.stats.newLast30Days} in last 30 days`}
+                  tone="primary"
+                />
+                <StatCard
+                  label="Villages"
+                  value={String(overview.data.stats.villages)}
+                  helper="Distinct villages"
+                  tone="sky"
+                />
+                <StatCard
+                  label="Setup complete"
+                  value={String(overview.data.stats.setupComplete)}
+                  helper="Farms fully onboarded"
+                  tone="soil"
+                />
+                <StatCard
+                  label="AI queries"
+                  value={String(overview.data.stats.totalAIQueries)}
+                  helper="All time, synced devices"
+                  tone="harvest"
+                />
+                <StatCard
+                  label="New farmers"
+                  value={String(overview.data.stats.newLast30Days)}
+                  helper="Last 30 days"
+                  tone="primary"
+                />
+              </div>
+
+              {/* Crop distribution + recent questions */}
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <Card className="border-border/60 bg-card p-6">
+                  <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+                    Crops being grown
                   </div>
-                  <div className="mt-3 text-3xl font-display font-bold text-foreground">
-                    {d.cases}
-                  </div>
-                  <div className="text-xs text-muted-foreground">reported cases</div>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <Bug className="h-3.5 w-3.5 text-destructive" />
-                    <span className="text-xs text-muted-foreground">{d.disease}</span>
-                  </div>
+                  {overview.data.topCrops.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No crop data synced yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {overview.data.topCrops.map((c) => {
+                        const max = overview.data!.topCrops[0].count;
+                        return (
+                          <div key={c.name} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span>
+                                <CropIcon name={c.name} className="mr-1.5" />
+                                {c.name}
+                              </span>
+                              <span className="font-semibold">{c.count}</span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: `${(c.count / max) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </Card>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* Crop production forecast */}
-        <section className="container mx-auto px-4 py-16">
-          <SectionHeading
-            eyebrow="Production forecast"
-            title="Crop yield projections"
-            subtitle="AI-driven production estimates based on current soil, weather, and crop data."
-          />
-          <Card className="mt-6 border-border/60 bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Crop</TableHead>
-                  <TableHead>Season</TableHead>
-                  <TableHead>Expected yield</TableHead>
-                  <TableHead>Change vs last year</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {FORECASTS.map((row) => (
-                  <TableRow key={row.crop}>
-                    <TableCell className="font-medium">{row.crop}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.season}</TableCell>
-                    <TableCell className="font-semibold">{row.yield}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`text-sm font-semibold ${
-                          row.change.startsWith("+") ? "text-primary" : "text-destructive"
-                        }`}
-                      >
-                        {row.change}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </section>
-
-        {/* AI usage analytics */}
-        <section className="bg-muted/40 py-16">
-          <div className="container mx-auto px-4">
-            <SectionHeading
-              eyebrow="AI usage analytics"
-              title="Platform intelligence"
-              subtitle="Track query volume, voice usage, and top categories to improve farmer support."
-            />
-            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
-              <Card className="border-border/60 bg-card p-6">
-                <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
-                  Usage overview
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-lg bg-muted/30 p-4 text-center">
-                    <div className="font-display text-3xl font-bold text-primary">48,290</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Total queries this month
-                    </div>
+                <Card className="border-border/60 bg-card p-6">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+                    <Bot className="h-3.5 w-3.5" /> Recent farmer questions
                   </div>
-                  <div className="rounded-lg bg-muted/30 p-4 text-center">
-                    <div className="font-display text-3xl font-bold text-sky">72%</div>
-                    <div className="text-xs text-muted-foreground mt-1">Voice query usage</div>
-                  </div>
-                </div>
-              </Card>
-              <Card className="border-border/60 bg-card p-6">
-                <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
-                  Top query categories
-                </div>
-                <div className="space-y-3">
-                  {AI_CATEGORIES.map((cat) => (
-                    <div key={cat.label} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{cat.label}</span>
-                        <span className="font-semibold">{cat.pct}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${cat.pct}%` }}
-                        />
-                      </div>
+                  {overview.data.recentQuestions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No AI queries synced yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {overview.data.recentQuestions.map((q, i) => (
+                        <div key={i} className="rounded-lg bg-muted/40 p-2.5 text-sm">
+                          <span className="mr-2 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary uppercase">
+                            {q.language}
+                          </span>
+                          {q.question}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          </div>
-        </section>
+                  )}
+                </Card>
+              </div>
 
-        <section className="container mx-auto px-4 pb-20">
-          <SectionHeading
-            eyebrow="Officer tools"
-            title="Everything in one console"
-            subtitle="Track scheme uptake, AI usage, and support requests across districts."
-          />
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <IconCard
-              icon={Users}
-              title="Farmer management"
-              description="View active profiles and onboarding status."
-              tone="primary"
-            />
-            <IconCard
-              icon={TrendingUp}
-              title="Production forecast"
-              description="Predict crop output with AI trends."
-              tone="harvest"
-            />
-            <IconCard
-              icon={Bug}
-              title="Disease monitoring"
-              description="Track outbreaks and respond quickly."
-              tone="destructive"
-            />
-            <IconCard
-              icon={Activity}
-              title="AI analytics"
-              description="Monitor voice usage and query patterns."
-              tone="sky"
-            />
-          </div>
+              {/* Farmers table */}
+              <div className="mt-10">
+                <SectionHeading
+                  eyebrow="Farmer management"
+                  title="Registered farmers"
+                  subtitle="Most recently active first (up to 100)."
+                />
+                <Card className="mt-6 border-border/60 bg-card overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Village</TableHead>
+                        <TableHead>Crops</TableHead>
+                        <TableHead>Language</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Last active</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {overview.data.users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.name}</TableCell>
+                          <TableCell className="text-muted-foreground">{u.phone}</TableCell>
+                          <TableCell className="text-muted-foreground">{u.village}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {u.crops.map((c) => (
+                              <span key={c} className="mr-2 whitespace-nowrap">
+                                <CropIcon name={c} className="mr-0.5" />
+                                {c}
+                              </span>
+                            ))}
+                          </TableCell>
+                          <TableCell className="uppercase text-muted-foreground">
+                            {u.language}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {u.createdAt.slice(0, 10)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                u.lastActive
+                                  ? "bg-primary/10 text-primary border-primary/20"
+                                  : "bg-muted text-muted-foreground border-border"
+                              }
+                            >
+                              {daysAgo(u.lastActive)}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </div>
+            </>
+          )}
         </section>
       </AppLayout>
     </AuthGuard>
