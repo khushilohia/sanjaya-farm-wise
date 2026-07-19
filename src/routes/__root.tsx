@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider } from "../lib/i18n";
 import { useAuthStore } from "../frontend/store/authStore";
 import { startFarmSync } from "../frontend/store/farmSync";
+import { Toaster } from "../frontend/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +137,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <Outlet />
+        <Toaster />
       </LanguageProvider>
     </QueryClientProvider>
   );
