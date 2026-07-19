@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider } from "../lib/i18n";
+import { useAuthStore } from "../frontend/store/authStore";
+import { startFarmSync } from "../frontend/store/farmSync";
 
 function NotFoundComponent() {
   return (
@@ -79,9 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Sanjaya — Smart AI Farming Assistant" },
-      { name: "description", content: "AI-powered farming assistance for villages and farmers. Weather, market prices, crop disease detection, and government schemes — in your language." },
+      {
+        name: "description",
+        content:
+          "AI-powered farming assistance for villages and farmers. Weather, market prices, crop disease detection, and government schemes — in your language.",
+      },
       { property: "og:title", content: "Sanjaya — Smart AI Farming Assistant" },
-      { property: "og:description", content: "AI-powered farming assistance for villages and farmers." },
+      {
+        property: "og:description",
+        content: "AI-powered farming assistance for villages and farmers.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -117,6 +126,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    void useAuthStore.getState().refreshSession();
+    startFarmSync();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

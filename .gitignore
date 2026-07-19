@@ -17,6 +17,10 @@ dist-ssr
 *.local
 .env
 .env.*
+!.env.example
+
+# Local SQLite database (dev only — production uses Turso via DATABASE_URL)
+data/
 
 # Vercel build output (generated at deploy time, not committed)
 .vercel/output

@@ -6,15 +6,22 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Default target is Vercel. Docker builds set NITRO_PRESET=node-server to get
+// a standalone Node server in .output/ instead (see Dockerfile).
+const nitro =
+  process.env.NITRO_PRESET === "node-server"
+    ? { preset: "node-server" as const }
+    : {
+        preset: "vercel" as const,
+        output: {
+          dir: ".vercel/output",
+          serverDir: ".vercel/output/functions/__server.func",
+          publicDir: ".vercel/output/static",
+        },
+      };
+
 export default defineConfig({
-  nitro: {
-    preset: "vercel",
-    output: {
-      dir: ".vercel/output",
-      serverDir: ".vercel/output/functions/__server.func",
-      publicDir: ".vercel/output/static",
-    },
-  },
+  nitro,
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

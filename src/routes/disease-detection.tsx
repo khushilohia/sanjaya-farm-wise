@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DiseaseDetectionPage } from "@/features/disease-detection/pages/DiseaseDetectionPage";
+import { DiseaseDetectionPage } from "@/frontend/features/disease-detection/pages/DiseaseDetectionPage";
 
 export const Route = createFileRoute("/disease-detection")({
   head: () => ({ meta: [{ title: "Crop Disease Detection · Sanjaya" }] }),

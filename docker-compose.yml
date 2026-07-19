@@ -1,0 +1,15 @@
+services:
+  sanjaya:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      # SQLite inside the mounted volume; set DATABASE_URL in .env to use Turso instead
+      DATABASE_URL: ${DATABASE_URL:-file:/app/data/sanjaya.db}
+    volumes:
+      - sanjaya-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  sanjaya-data:
