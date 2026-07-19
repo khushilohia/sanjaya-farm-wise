@@ -18,7 +18,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 ## Quick start
 
 ```sh
-npm install                # or bun install
+npm install
 cp .env.example .env       # fill in keys (see below)
 npm run dev                # http://localhost:8080
 ```
@@ -44,4 +44,6 @@ npm run build    # production build
 npm run lint     # eslint
 npm run format   # prettier
 node ./node_modules/typescript/bin/tsc --noEmit   # typecheck
+node scripts/smoke.ts       # backend logic tests (db, auth, rules)
+node scripts/e2e-auth.ts    # full auth flow (needs `npm run dev` running)
 ```

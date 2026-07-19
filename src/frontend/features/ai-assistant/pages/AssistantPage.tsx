@@ -18,10 +18,13 @@ import { VoiceOrb, type OrbState } from "@/frontend/features/ai-assistant/compon
 import { useVoiceInput } from "@/frontend/features/ai-assistant/hooks/useVoiceInput";
 import { useAIChat, type ChatTurn } from "@/frontend/features/ai-assistant/hooks/useAIChat";
 import { useSarvamTTS } from "@/frontend/features/ai-assistant/hooks/useSarvamTTS";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/frontend/store/authStore";
 import { useFarmStore } from "@/frontend/store/farmStore";
-import { useWeather } from "@/frontend/features/weather/hooks/useWeather";
+import { useWeather, useGeolocation } from "@/frontend/features/weather/hooks/useWeather";
 import { weatherCodeToLabel } from "@/frontend/features/weather/api/openmeteo";
+import { fetchSoilData, fetchMarketPrices } from "@/backend/api/serverFns";
+import { checkEligibility } from "@/frontend/features/schemes/eligibility";
 import { Input } from "@/frontend/components/ui/input";
 import { Button } from "@/frontend/components/ui/button";
 
@@ -75,6 +78,29 @@ export function AssistantPage() {
   const user = useAuthStore((s) => s.user);
   const { addAILog, cropEntries, soilType, setupComplete } = useFarmStore();
   const { data: weather } = useWeather();
+  const { coords } = useGeolocation();
+
+  // Same query keys as SoilPage / MarketPage — shares their cache, no extra fetches
+  // when the farmer already visited those pages.
+  const { data: soil } = useQuery({
+    queryKey: ["soil", coords?.lat, coords?.lon],
+    queryFn: () => fetchSoilData({ data: { lat: coords!.lat, lon: coords!.lon } }),
+    enabled: Boolean(coords),
+    staleTime: 1000 * 60 * 60,
+  });
+  const { data: market } = useQuery({
+    queryKey: ["market-prices", user?.crops ?? []],
+    queryFn: () =>
+      fetchMarketPrices({
+        data: {
+          state: "Sikkim",
+          commodity: "",
+          crops: user?.crops ?? [],
+          language: user?.language ?? "en",
+        },
+      }),
+    staleTime: 1000 * 60 * 30,
+  });
 
   const [lang, setLang] = useState(user?.language ?? "en");
   const [orbState, setOrbState] = useState<OrbState>("idle");
@@ -112,6 +138,28 @@ export function AssistantPage() {
           .slice(0, 3)
           .map((p) => `${p}%`)
           .join(", ")}`,
+      soil &&
+        `Soil test (satellite, this location): pH ${soil.ph?.toFixed(1)}, texture ${soil.texture}, nitrogen ${soil.nitrogen?.toFixed(1)} g/kg, organic carbon ${soil.organicCarbon?.toFixed(1)} g/kg, health score ${soil.healthScore}/100`,
+      market?.records?.length &&
+        `Mandi prices ₹/quintal (${market.source === "live" ? "live Agmarknet" : "AI estimate"}): ${(
+          market.records as Array<{ commodity?: string; modalPrice?: number; trend?: string }>
+        )
+          .slice(0, 6)
+          .map(
+            (r) => `${r.commodity} ${r.modalPrice ?? "?"}${r.trend ? ` (trend ${r.trend})` : ""}`,
+          )
+          .join("; ")}`,
+      user &&
+        `Govt schemes this farmer qualifies for: ${
+          checkEligibility({
+            landAcres: Number(user.farmSize) || 0,
+            crop: user.crops?.[0] ?? "",
+            state: user.village ?? "",
+          })
+            .filter((s) => s.eligible)
+            .map((s) => `${s.name} (${s.benefit})`)
+            .join("; ") || "none confirmed yet"
+        }`,
       !setupComplete && "Note: farm setup incomplete",
     ]
       .filter(Boolean)

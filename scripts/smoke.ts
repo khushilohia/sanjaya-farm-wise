@@ -1,13 +1,13 @@
 // Backend smoke test: DB schema, password hashing, scheme rules, alert rules.
-// Run: bun run scripts/smoke.ts  (uses a throwaway DB file)
+// Run: node scripts/smoke.ts  (uses a throwaway DB file)
 import { strict as assert } from "node:assert";
 
 process.env.DATABASE_URL = "file:./data/smoke-test.db";
 
-const { db } = await import("../src/backend/db");
-const { hashPassword, verifyPassword } = await import("../src/backend/session");
-const { checkEligibility } = await import("../src/frontend/features/schemes/eligibility");
-const { deriveAlerts } = await import("../src/frontend/features/alerts/deriveAlerts");
+const { db } = await import("../src/backend/db.ts");
+const { hashPassword, verifyPassword } = await import("../src/backend/session.ts");
+const { checkEligibility } = await import("../src/frontend/features/schemes/eligibility.ts");
+const { deriveAlerts } = await import("../src/frontend/features/alerts/deriveAlerts.ts");
 
 // --- password hashing --------------------------------------------------------
 const hash = await hashPassword("secret123");

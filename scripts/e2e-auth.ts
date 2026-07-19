@@ -1,10 +1,17 @@
 // End-to-end auth test against a running dev server (npm run dev), using the
 // real TanStack Start client RPC wire protocol.
-// Run: bun run scripts/e2e-auth.ts
+// Run: node scripts/e2e-auth.ts
 import { strict as assert } from "node:assert";
 
 process.env.TSS_SERVER_FN_BASE = "http://localhost:8080/_serverFn/";
 const { createClientRpc } = await import("@tanstack/start-client-core/client-rpc");
+
+// Node resolves the package's "server" export condition, so the RPC client
+// expects a Start request context — seed an empty one.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any)[Symbol.for("tanstack-start:start-storage-context")]?.enterWith({
+  startOptions: {},
+});
 
 const fnId = (exportName: string) =>
   Buffer.from(
