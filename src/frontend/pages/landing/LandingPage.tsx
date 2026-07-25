@@ -15,6 +15,11 @@ import {
   ShieldCheck,
   Volume2,
   Star,
+  Satellite,
+  Radio,
+  Cpu,
+  Waves,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
@@ -66,6 +71,59 @@ const FEATURES = [
     title: "Kiosk Ready",
     desc: "Works offline on village touch screens",
     color: "bg-primary/10 text-primary",
+  },
+];
+
+const HARDWARE_PIPELINE = [
+  {
+    n: "01",
+    icon: Satellite,
+    title: "Sense",
+    desc: "Today: satellite soil data (ISRIC SoilGrids) for any GPS point — pH, nitrogen, organic carbon, texture, no hardware needed to start.",
+    roadmap:
+      "Optional in-ground probe: live moisture, temperature and pH at root depth, updated every 30 minutes.",
+  },
+  {
+    n: "02",
+    icon: Radio,
+    title: "Carry",
+    desc: "Today: your phone's connection syncs readings to Sanjaya the moment you open the app.",
+    roadmap:
+      "Optional probe: no SIM or gateway needed — a passing phone or shared vehicle collects readings by short-range radio in low-signal villages.",
+  },
+  {
+    n: "03",
+    icon: Cpu,
+    title: "Analyze",
+    desc: "Today: the AI cross-checks your soil, live weather, and mandi prices against your crop before answering — the same engine either way.",
+    roadmap:
+      "Optional probe: continuous root-zone readings raise a risk score days before symptoms are visible above ground.",
+  },
+  {
+    n: "04",
+    icon: Volume2,
+    title: "Advise",
+    desc: "Today: one spoken instruction in your language — a quantity, a reason, a deadline, not a raw number.",
+    roadmap:
+      "Optional probe: earlier warnings mean the same advice arrives with more lead time to act.",
+  },
+];
+
+const HARDWARE_BENEFITS = [
+  {
+    icon: Waves,
+    title: "Real-time, not satellite-lag",
+    desc: "Satellite soil data updates over weeks. A probe reads moisture and temperature every 30 minutes — catching a waterlogged bed before the crop shows it.",
+  },
+  {
+    icon: Zap,
+    title: "Works without a data connection",
+    desc: "The node runs on solar and stores readings locally. A phone passing nearby syncs it — no monthly SIM, no signal required at the plot.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Same AI, sharper input",
+    desc: "The probe doesn't replace Sanjaya's AI — it feeds it better data. Every answer, alert, and scheme check gets more precise with real ground readings.",
   },
 ];
 
@@ -296,8 +354,66 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* Hardware integration */}
       <section className="bg-muted/40 py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+              Software today, hardware when you need it
+            </div>
+            <h2 className="mt-3 font-display text-4xl font-semibold">
+              From satellite soil data to a probe in the ground
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Sanjaya works fully today with satellite soil data and no equipment to buy. For farms
+              that want sharper, real-time readings, an optional soil probe plugs into the same AI —
+              same pipeline, deeper data.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-4">
+            {HARDWARE_PIPELINE.map((step) => (
+              <Card key={step.n} className="relative border-border/60 bg-card p-6 overflow-hidden">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <step.icon className="h-5 w-5" />
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="font-mono text-xs text-muted-foreground">{step.n}</span>
+                  <h3 className="font-display text-lg font-semibold">{step.title}</h3>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{step.desc}</p>
+                <div className="mt-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-2.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+                    With probe (roadmap)
+                  </span>
+                  <p className="mt-1 text-xs text-muted-foreground">{step.roadmap}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {HARDWARE_BENEFITS.map((b) => (
+              <Card key={b.title} className="border-border/60 bg-card p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky/15 text-sky-foreground">
+                  <b.icon className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="mt-3 font-display text-base font-semibold">{b.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
+              </Card>
+            ))}
+          </div>
+
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            The soil probe is on our roadmap and not yet available for purchase. Every feature
+            marked "today" above works right now in the free app — nothing to install, nothing to
+            wait for.
+          </p>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-2xl text-center">
             <div className="text-xs font-semibold uppercase tracking-widest text-primary">
