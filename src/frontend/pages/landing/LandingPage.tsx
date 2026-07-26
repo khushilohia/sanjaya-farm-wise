@@ -7,7 +7,6 @@ import {
   CloudSun,
   Landmark,
   Mic,
-  Monitor,
   Sprout,
   TrendingUp,
   Users,
@@ -15,11 +14,12 @@ import {
   ShieldCheck,
   Volume2,
   Star,
-  Satellite,
-  Radio,
-  Cpu,
-  Waves,
-  Zap,
+  ClipboardList,
+  Thermometer,
+  CloudRain,
+  Fingerprint,
+  Smartphone,
+  PhoneCall,
 } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
@@ -67,63 +67,58 @@ const FEATURES = [
     color: "bg-soil/15 text-soil-foreground",
   },
   {
-    icon: Monitor,
-    title: "Kiosk Ready",
-    desc: "Works offline on village touch screens",
-    color: "bg-primary/10 text-primary",
+    icon: Landmark,
+    title: "Government Schemes",
+    desc: "Find subsidies you qualify for",
+    color: "bg-soil/15 text-soil-foreground",
   },
 ];
 
-const HARDWARE_PIPELINE = [
+// The physical workflow: a trained operator visits the field with testing
+// hardware, records readings against the farmer's ID, and the farmer gets it
+// back on their phone or by calling the AI.
+const FIELD_WORKFLOW = [
   {
     n: "01",
-    icon: Satellite,
-    title: "Sense",
-    desc: "Today: satellite soil data (ISRIC SoilGrids) for any GPS point — pH, nitrogen, organic carbon, texture, no hardware needed to start.",
-    roadmap:
-      "Optional in-ground probe: live moisture, temperature and pH at root depth, updated every 30 minutes.",
+    icon: ClipboardList,
+    title: "Operator visits the field",
+    desc: "A trained Sanjaya field operator comes to your farm in person, on a scheduled village round — no travel or equipment needed from the farmer.",
   },
   {
     n: "02",
-    icon: Radio,
-    title: "Carry",
-    desc: "Today: your phone's connection syncs readings to Sanjaya the moment you open the app.",
-    roadmap:
-      "Optional probe: no SIM or gateway needed — a passing phone or shared vehicle collects readings by short-range radio in low-signal villages.",
+    icon: Thermometer,
+    title: "On-site testing",
+    desc: "Using handheld soil, temperature and rainfall testing equipment, the operator records real readings from your actual plot — not an estimate.",
   },
   {
     n: "03",
-    icon: Cpu,
-    title: "Analyze",
-    desc: "Today: the AI cross-checks your soil, live weather, and mandi prices against your crop before answering — the same engine either way.",
-    roadmap:
-      "Optional probe: continuous root-zone readings raise a risk score days before symptoms are visible above ground.",
+    icon: Fingerprint,
+    title: "Saved to your farmer ID",
+    desc: "Every reading is logged against your unique farmer ID in Sanjaya's system, building a real history of your field over every visit.",
   },
   {
     n: "04",
-    icon: Volume2,
-    title: "Advise",
-    desc: "Today: one spoken instruction in your language — a quantity, a reason, a deadline, not a raw number.",
-    roadmap:
-      "Optional probe: earlier warnings mean the same advice arrives with more lead time to act.",
+    icon: Smartphone,
+    title: "You see it, or you call",
+    desc: "View your test results anytime on your phone, or dial the toll-free number and ask the AI to explain what it means and what to do next.",
   },
 ];
 
-const HARDWARE_BENEFITS = [
+const FIELD_BENEFITS = [
   {
-    icon: Waves,
-    title: "Real-time, not satellite-lag",
-    desc: "Satellite soil data updates over weeks. A probe reads moisture and temperature every 30 minutes — catching a waterlogged bed before the crop shows it.",
+    icon: ClipboardList,
+    title: "Real data, not a guess",
+    desc: "Soil, temperature and rainfall are measured on your own field by a person with proper equipment — the same figures an agronomist would trust.",
   },
   {
-    icon: Zap,
-    title: "Works without a data connection",
-    desc: "The node runs on solar and stores readings locally. A phone passing nearby syncs it — no monthly SIM, no signal required at the plot.",
+    icon: PhoneCall,
+    title: "No smartphone required",
+    desc: "Don't have a phone or don't want to type? Call the toll-free number and talk to the AI in your language — it already knows your test results.",
   },
   {
-    icon: ShieldCheck,
-    title: "Same AI, sharper input",
-    desc: "The probe doesn't replace Sanjaya's AI — it feeds it better data. Every answer, alert, and scheme check gets more precise with real ground readings.",
+    icon: CloudRain,
+    title: "A history that grows",
+    desc: "Every visit adds to your farmer ID's record, so advice gets sharper over seasons instead of starting fresh each time.",
   },
 ];
 
@@ -167,7 +162,7 @@ const TESTIMONIALS = [
     village: "Ilam, Nepal",
     crop: "Rice",
     quote:
-      "The kiosk in our village changed how we farm. We get weather alerts, scheme updates, everything in one place.",
+      "The field operator tested our soil last season, and now I just call the toll-free number whenever I need advice. Everything is in one place.",
     initial: "R",
   },
 ];
@@ -334,7 +329,8 @@ export function LandingPage() {
             </div>
             <h2 className="mt-3 font-display text-4xl font-semibold">Built for real farmers</h2>
             <p className="mt-4 text-muted-foreground">
-              Six powerful features in one platform — voice-enabled, multilingual, and kiosk-ready.
+              Five powerful features in one platform — voice-enabled, multilingual, and backed by
+              real field visits.
             </p>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -354,25 +350,25 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Hardware integration */}
+      {/* Field testing workflow */}
       <section className="bg-muted/40 py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-2xl text-center">
             <div className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Software today, hardware when you need it
+              How your field gets tested
             </div>
             <h2 className="mt-3 font-display text-4xl font-semibold">
-              From satellite soil data to a probe in the ground
+              A person visits. Real hardware tests your soil. You get the answer.
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Sanjaya works fully today with satellite soil data and no equipment to buy. For farms
-              that want sharper, real-time readings, an optional soil probe plugs into the same AI —
-              same pipeline, deeper data.
+              Sanjaya isn't only an app — a trained field operator carries soil, temperature and
+              rainfall testing equipment to your farm, records it against your farmer ID, and you
+              get it back on your phone or by calling our AI.
             </p>
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-4">
-            {HARDWARE_PIPELINE.map((step) => (
+            {FIELD_WORKFLOW.map((step) => (
               <Card key={step.n} className="relative border-border/60 bg-card p-6 overflow-hidden">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <step.icon className="h-5 w-5" />
@@ -382,18 +378,12 @@ export function LandingPage() {
                   <h3 className="font-display text-lg font-semibold">{step.title}</h3>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{step.desc}</p>
-                <div className="mt-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-2.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">
-                    With probe (roadmap)
-                  </span>
-                  <p className="mt-1 text-xs text-muted-foreground">{step.roadmap}</p>
-                </div>
               </Card>
             ))}
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {HARDWARE_BENEFITS.map((b) => (
+            {FIELD_BENEFITS.map((b) => (
               <Card key={b.title} className="border-border/60 bg-card p-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky/15 text-sky-foreground">
                   <b.icon className="h-4.5 w-4.5" />
@@ -404,11 +394,18 @@ export function LandingPage() {
             ))}
           </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            The soil probe is on our roadmap and not yet available for purchase. Every feature
-            marked "today" above works right now in the free app — nothing to install, nothing to
-            wait for.
-          </p>
+          <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:flex-row sm:justify-center sm:text-left">
+            <PhoneCall className="h-8 w-8 shrink-0 text-primary" />
+            <div>
+              <div className="font-display text-lg font-semibold">
+                Prefer to talk? Call our toll-free number.
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                No smartphone, no app, no typing — just call and speak to Sanjaya's AI in Hindi,
+                Nepali, Bengali or English about your latest field test.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
