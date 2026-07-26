@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -78,6 +78,7 @@ const FIELD_WORKFLOW = [
     icon: ClipboardList,
     title: "Operator visits the field",
     desc: "A trained Sanjaya field operator comes to your farm in person, on a scheduled village round.",
+    more: "Visits are scheduled by village, so operators cover several farms in one round trip — no cost passed to you.",
     place: "At your farm",
     tone: "soil" as const,
   },
@@ -86,6 +87,7 @@ const FIELD_WORKFLOW = [
     icon: Thermometer,
     title: "On-site testing",
     desc: "Handheld soil, temperature and rainfall equipment records real readings from your actual plot.",
+    more: "The same reading a soil-testing lab would take — pH, moisture and temperature, measured where your crop actually grows.",
     place: "In your soil",
     tone: "sky" as const,
   },
@@ -94,6 +96,7 @@ const FIELD_WORKFLOW = [
     icon: Fingerprint,
     title: "Saved to your farmer ID",
     desc: "Every reading is logged against your unique ID, building a real history of your field over time.",
+    more: "Your farmer ID keeps every visit on record, so Sanjaya can compare this season to last and notice what's changed.",
     place: "In Sanjaya",
     tone: "primary" as const,
   },
@@ -102,6 +105,7 @@ const FIELD_WORKFLOW = [
     icon: Smartphone,
     title: "You see it, or you call",
     desc: "View results on your phone, or dial the toll-free number and ask the AI what it means.",
+    more: "Nothing to install. Open the app to see the numbers, or just call — the AI already has your latest test in front of it.",
     place: "In your hand",
     tone: "harvest" as const,
   },
@@ -192,9 +196,57 @@ const TESTIMONIALS = [
   },
 ];
 
+// Fades + slides an element in the first time it scrolls into view.
+// One shared IntersectionObserver-per-instance, respects reduced motion.
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisible(true);
+      return;
+    }
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+      } ${className}`}
+      style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function LandingPage() {
   const [chipIdx, setChipIdx] = useState(0);
   const [listening, setListening] = useState(false);
+  const [openPhase, setOpenPhase] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
@@ -345,40 +397,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Features grid */}
+      {/* Field testing workflow */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Everything you need
-            </div>
-            <h2 className="mt-3 font-display text-4xl font-semibold">Built for real farmers</h2>
-            <p className="mt-4 text-muted-foreground">
-              Five powerful features in one platform — voice-enabled, multilingual, and backed by
-              real field visits.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <Card
-                key={f.title}
-                className="border-border/60 bg-card p-6 hover:shadow-md transition-shadow"
-              >
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${f.color}`}>
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 font-display text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Field testing workflow */}
-      <section className="bg-muted/40 py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <div className="text-xs font-semibold uppercase tracking-widest text-primary">
               How your field gets tested
             </div>
@@ -390,7 +412,8 @@ export function LandingPage() {
               rainfall testing equipment to your farm, records it against your farmer ID, and you
               get it back on your phone or by calling our AI.
             </p>
-          </div>
+            <p className="mt-2 text-xs text-muted-foreground/70">Tap a phase to see more.</p>
+          </Reveal>
 
           {/* Connected path: a literal line from field to phone, one badge per phase */}
           <div className="relative mt-16">
@@ -402,26 +425,56 @@ export function LandingPage() {
             <div className="grid gap-10 md:grid-cols-4 md:gap-6">
               {FIELD_WORKFLOW.map((step, i) => {
                 const tone = TONE_STYLES[step.tone];
+                const isOpen = openPhase === step.n;
                 return (
-                  <div key={step.n} className="relative flex gap-4 md:flex-col md:gap-0">
-                    {/* icon badge sitting directly on the connecting line */}
-                    <div className="relative shrink-0 md:flex md:justify-center">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full ring-4 ring-background ${tone.badge} shadow-md`}
-                      >
-                        <step.icon className="h-5 w-5" />
+                  <Reveal key={step.n} delay={i * 120} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenPhase(isOpen ? null : step.n)}
+                      aria-expanded={isOpen}
+                      className="group flex w-full gap-4 rounded-xl text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:flex-col md:gap-0 md:text-center"
+                    >
+                      {/* icon badge sitting directly on the connecting line */}
+                      <div className="relative shrink-0 md:flex md:justify-center">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ring-4 ring-background ${tone.badge} shadow-md transition-transform duration-300 group-hover:scale-110 ${isOpen ? "scale-110" : ""}`}
+                        >
+                          <step.icon className="h-5 w-5" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="md:mt-5 md:text-center">
-                      <div
-                        className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${tone.text}`}
-                      >
-                        Phase {step.n} · {step.place}
+                      <div className="md:mt-5">
+                        <div
+                          className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${tone.text}`}
+                        >
+                          Phase {step.n} · {step.place}
+                        </div>
+                        <h3 className="mt-1 font-display text-lg font-semibold">{step.title}</h3>
+                        <p className="mt-1.5 text-sm text-muted-foreground md:mx-auto md:max-w-[22ch]">
+                          {step.desc}
+                        </p>
                       </div>
-                      <h3 className="mt-1 font-display text-lg font-semibold">{step.title}</h3>
-                      <p className="mt-1.5 text-sm text-muted-foreground md:mx-auto md:max-w-[22ch]">
-                        {step.desc}
-                      </p>
+                    </button>
+                    {/* expandable detail */}
+                    <div
+                      className={`grid overflow-hidden transition-all duration-300 ease-out ${
+                        isOpen ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="min-h-0">
+                        <div
+                          className={`rounded-lg border-l-2 bg-muted/40 p-3 text-left text-xs leading-relaxed text-muted-foreground md:mx-auto md:max-w-[26ch] ${
+                            step.tone === "soil"
+                              ? "border-soil"
+                              : step.tone === "sky"
+                                ? "border-sky"
+                                : step.tone === "primary"
+                                  ? "border-primary"
+                                  : "border-harvest"
+                          }`}
+                        >
+                          {step.more}
+                        </div>
+                      </div>
                     </div>
                     {/* arrow between phases, desktop only */}
                     {i < FIELD_WORKFLOW.length - 1 && (
@@ -433,33 +486,32 @@ export function LandingPage() {
                         <ArrowRight className="h-4 w-4" />
                       </div>
                     )}
-                  </div>
+                  </Reveal>
                 );
               })}
             </div>
           </div>
 
           <div className="mt-14 grid gap-4 md:grid-cols-3">
-            {FIELD_BENEFITS.map((b) => {
+            {FIELD_BENEFITS.map((b, i) => {
               const tone = TONE_STYLES[b.tone];
               return (
-                <Card
-                  key={b.title}
-                  className="border-border/60 bg-card p-6 transition-shadow hover:shadow-md"
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone.badge}`}
-                  >
-                    <b.icon className="h-4.5 w-4.5" />
-                  </div>
-                  <h3 className="mt-3 font-display text-base font-semibold">{b.title}</h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
-                </Card>
+                <Reveal key={b.title} delay={i * 100}>
+                  <Card className="border-border/60 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone.badge}`}
+                    >
+                      <b.icon className="h-4.5 w-4.5" />
+                    </div>
+                    <h3 className="mt-3 font-display text-base font-semibold">{b.title}</h3>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
+                  </Card>
+                </Reveal>
               );
             })}
           </div>
 
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:flex-row sm:justify-center sm:text-left">
+          <Reveal className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:flex-row sm:justify-center sm:text-left">
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
               <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
               <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-warm">
@@ -475,6 +527,37 @@ export function LandingPage() {
                 Nepali, Bengali or English about your latest field test.
               </p>
             </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Features grid */}
+      <section className="bg-muted/40 py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+              Everything you need
+            </div>
+            <h2 className="mt-3 font-display text-4xl font-semibold">Built for real farmers</h2>
+            <p className="mt-4 text-muted-foreground">
+              Five powerful features in one platform — voice-enabled, multilingual, and backed by
+              real field visits.
+            </p>
+          </Reveal>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.title} delay={i * 80}>
+                <Card className="group border-border/60 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${f.color} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}
+                  >
+                    <f.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 font-display text-lg font-semibold">{f.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
+                </Card>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
@@ -599,117 +682,6 @@ export function LandingPage() {
       </section>
 
       {/* Trust strip */}
-      {/* Pricing */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Pricing
-            </div>
-            <h2 className="mt-3 font-display text-4xl font-semibold">
-              Free for every farmer. Forever.
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
-              All core features are free. Pro adds unlimited scans and personalized planning.
-              Village entrepreneurs can run Sanjaya as a kiosk business.
-            </p>
-          </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-            {[
-              {
-                name: "Kisan (Free)",
-                price: "₹0",
-                period: "forever",
-                highlight: false,
-                cta: "Get started free",
-                to: "/register",
-                features: [
-                  "AI voice assistant in 4 languages",
-                  "5 disease photo scans / month",
-                  "Live weather + farm alerts",
-                  "Mandi prices + trend charts",
-                  "Govt scheme eligibility check",
-                  "Soil health report",
-                ],
-              },
-              {
-                name: "Kisan Pro",
-                price: "₹99",
-                period: "/month · or ₹999/year",
-                highlight: true,
-                cta: "Coming soon",
-                to: "/register",
-                features: [
-                  "Everything in Free",
-                  "Unlimited disease scans",
-                  "Personalized weekly crop calendar",
-                  "SMS alerts for price spikes & weather",
-                  "Priority AI answers",
-                  "Expert callback support",
-                ],
-              },
-              {
-                name: "Kiosk Partner",
-                price: "₹2,999",
-                period: "/year per village kiosk",
-                highlight: false,
-                cta: "Contact us",
-                to: "/register",
-                features: [
-                  "Voice-first kiosk mode for shared use",
-                  "Serve unlimited farmers per kiosk",
-                  "Partner earnings on input referrals",
-                  "Multi-farmer profile switching",
-                  "Onboarding & training support",
-                ],
-              },
-            ].map((tier) => (
-              <Card
-                key={tier.name}
-                className={`relative flex flex-col p-6 ${
-                  tier.highlight ? "border-primary shadow-lg shadow-primary/10" : "border-border/60"
-                }`}
-              >
-                {tier.highlight && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">
-                    Most popular
-                  </span>
-                )}
-                <div className="text-sm font-semibold uppercase tracking-widest text-primary">
-                  {tier.name}
-                </div>
-                <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="font-display text-4xl font-bold">{tier.price}</span>
-                  <span className="text-sm text-muted-foreground">{tier.period}</span>
-                </div>
-                <ul className="mt-5 space-y-2.5 text-sm flex-1">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  asChild
-                  className={`mt-6 w-full ${
-                    tier.highlight
-                      ? "bg-primary hover:bg-primary/90"
-                      : "bg-muted text-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  <Link to={tier.to}>{tier.cta}</Link>
-                </Button>
-              </Card>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Pro and Kiosk Partner plans are launching soon — today every feature is free while we
-            grow with our first villages.
-          </p>
-        </div>
-      </section>
-
       <section className="border-y border-border/60 bg-card py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
