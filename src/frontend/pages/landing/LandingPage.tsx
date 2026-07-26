@@ -66,59 +66,84 @@ const FEATURES = [
     desc: "Find subsidies you qualify for",
     color: "bg-soil/15 text-soil-foreground",
   },
-  {
-    icon: Landmark,
-    title: "Government Schemes",
-    desc: "Find subsidies you qualify for",
-    color: "bg-soil/15 text-soil-foreground",
-  },
 ];
 
 // The physical workflow: a trained operator visits the field with testing
 // hardware, records readings against the farmer's ID, and the farmer gets it
-// back on their phone or by calling the AI.
+// back on their phone or by calling the AI. Each phase gets its own tone so
+// the path reads as a real journey, not four identical cards.
 const FIELD_WORKFLOW = [
   {
     n: "01",
     icon: ClipboardList,
     title: "Operator visits the field",
-    desc: "A trained Sanjaya field operator comes to your farm in person, on a scheduled village round — no travel or equipment needed from the farmer.",
+    desc: "A trained Sanjaya field operator comes to your farm in person, on a scheduled village round.",
+    place: "At your farm",
+    tone: "soil" as const,
   },
   {
     n: "02",
     icon: Thermometer,
     title: "On-site testing",
-    desc: "Using handheld soil, temperature and rainfall testing equipment, the operator records real readings from your actual plot — not an estimate.",
+    desc: "Handheld soil, temperature and rainfall equipment records real readings from your actual plot.",
+    place: "In your soil",
+    tone: "sky" as const,
   },
   {
     n: "03",
     icon: Fingerprint,
     title: "Saved to your farmer ID",
-    desc: "Every reading is logged against your unique farmer ID in Sanjaya's system, building a real history of your field over every visit.",
+    desc: "Every reading is logged against your unique ID, building a real history of your field over time.",
+    place: "In Sanjaya",
+    tone: "primary" as const,
   },
   {
     n: "04",
     icon: Smartphone,
     title: "You see it, or you call",
-    desc: "View your test results anytime on your phone, or dial the toll-free number and ask the AI to explain what it means and what to do next.",
+    desc: "View results on your phone, or dial the toll-free number and ask the AI what it means.",
+    place: "In your hand",
+    tone: "harvest" as const,
   },
 ];
+
+const TONE_STYLES = {
+  soil: {
+    badge: "bg-soil text-soil-foreground",
+    text: "text-soil",
+  },
+  sky: {
+    badge: "bg-sky text-sky-foreground",
+    text: "text-sky-foreground",
+  },
+  primary: {
+    badge: "bg-primary text-primary-foreground",
+    text: "text-primary",
+  },
+  harvest: {
+    badge: "bg-harvest text-harvest-foreground",
+    text: "text-harvest-foreground",
+  },
+} as const;
 
 const FIELD_BENEFITS = [
   {
     icon: ClipboardList,
     title: "Real data, not a guess",
     desc: "Soil, temperature and rainfall are measured on your own field by a person with proper equipment — the same figures an agronomist would trust.",
+    tone: "soil" as const,
   },
   {
     icon: PhoneCall,
     title: "No smartphone required",
     desc: "Don't have a phone or don't want to type? Call the toll-free number and talk to the AI in your language — it already knows your test results.",
+    tone: "harvest" as const,
   },
   {
     icon: CloudRain,
     title: "A history that grows",
     desc: "Every visit adds to your farmer ID's record, so advice gets sharper over seasons instead of starting fresh each time.",
+    tone: "sky" as const,
   },
 ];
 
@@ -367,35 +392,80 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-4">
-            {FIELD_WORKFLOW.map((step) => (
-              <Card key={step.n} className="relative border-border/60 bg-card p-6 overflow-hidden">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <step.icon className="h-5 w-5" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">{step.n}</span>
-                  <h3 className="font-display text-lg font-semibold">{step.title}</h3>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">{step.desc}</p>
-              </Card>
-            ))}
+          {/* Connected path: a literal line from field to phone, one badge per phase */}
+          <div className="relative mt-16">
+            {/* the connecting line — horizontal on desktop, vertical on mobile */}
+            <div
+              className="absolute left-6 top-6 bottom-6 w-px bg-linear-to-b from-soil/50 via-sky/50 to-harvest/50 md:left-0 md:right-0 md:top-8 md:h-px md:w-auto md:bg-linear-to-r"
+              aria-hidden="true"
+            />
+            <div className="grid gap-10 md:grid-cols-4 md:gap-6">
+              {FIELD_WORKFLOW.map((step, i) => {
+                const tone = TONE_STYLES[step.tone];
+                return (
+                  <div key={step.n} className="relative flex gap-4 md:flex-col md:gap-0">
+                    {/* icon badge sitting directly on the connecting line */}
+                    <div className="relative shrink-0 md:flex md:justify-center">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full ring-4 ring-background ${tone.badge} shadow-md`}
+                      >
+                        <step.icon className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div className="md:mt-5 md:text-center">
+                      <div
+                        className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${tone.text}`}
+                      >
+                        Phase {step.n} · {step.place}
+                      </div>
+                      <h3 className="mt-1 font-display text-lg font-semibold">{step.title}</h3>
+                      <p className="mt-1.5 text-sm text-muted-foreground md:mx-auto md:max-w-[22ch]">
+                        {step.desc}
+                      </p>
+                    </div>
+                    {/* arrow between phases, desktop only */}
+                    {i < FIELD_WORKFLOW.length - 1 && (
+                      <div
+                        className="absolute top-4 hidden text-muted-foreground/50 md:block"
+                        style={{ left: "calc(100% - 8px)" }}
+                        aria-hidden="true"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {FIELD_BENEFITS.map((b) => (
-              <Card key={b.title} className="border-border/60 bg-card p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky/15 text-sky-foreground">
-                  <b.icon className="h-4.5 w-4.5" />
-                </div>
-                <h3 className="mt-3 font-display text-base font-semibold">{b.title}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
-              </Card>
-            ))}
+          <div className="mt-14 grid gap-4 md:grid-cols-3">
+            {FIELD_BENEFITS.map((b) => {
+              const tone = TONE_STYLES[b.tone];
+              return (
+                <Card
+                  key={b.title}
+                  className="border-border/60 bg-card p-6 transition-shadow hover:shadow-md"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone.badge}`}
+                  >
+                    <b.icon className="h-4.5 w-4.5" />
+                  </div>
+                  <h3 className="mt-3 font-display text-base font-semibold">{b.title}</h3>
+                  <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
+                </Card>
+              );
+            })}
           </div>
 
-          <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:flex-row sm:justify-center sm:text-left">
-            <PhoneCall className="h-8 w-8 shrink-0 text-primary" />
+          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:flex-row sm:justify-center sm:text-left">
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+              <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-warm">
+                <PhoneCall className="h-5 w-5" />
+              </div>
+            </div>
             <div>
               <div className="font-display text-lg font-semibold">
                 Prefer to talk? Call our toll-free number.
