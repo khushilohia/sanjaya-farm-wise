@@ -33,13 +33,12 @@ Sanjaya is a voice-first AI farming assistant for smallholder farmers in Northea
 
 ## External APIs
 
-### OpenRouter (AI chat)
-- **Used for**: Farmer question answering
-- **Model**: `google/gemini-3.5-flash`
-- **Endpoint**: `https://openrouter.ai/api/v1/chat/completions`
-- **Auth**: `Authorization: Bearer <OPENROUTER_API_KEY>`
-- **Key env var**: `OPENROUTER_API_KEY`
-- **Note**: Model was previously `google/gemini-flash-1.5` — that model was removed by OpenRouter. Always verify model availability at https://openrouter.ai/models if responses break.
+### OpenAI (AI chat + vision)
+- **Used for**: Farmer question answering, crop disease photo diagnosis, soil interpretation, market price estimates
+- **Model**: `gpt-4o-mini`
+- **Endpoint**: `https://api.openai.com/v1/chat/completions`
+- **Auth**: `Authorization: Bearer <OPEN_AI_API_KEY>`
+- **Key env var**: `OPEN_AI_API_KEY`
 
 ### Sarvam AI (Text-to-Speech)
 - **Used for**: Speaking AI answers back to the farmer in their language
@@ -72,7 +71,7 @@ File: `.env` in project root (never commit this file)
 
 ```
 SARVAM_AI_API_KEY=...      # Sarvam AI TTS
-OPENROUTER_API_KEY=...     # OpenRouter AI chat
+OPEN_AI_API_KEY=...        # OpenAI AI chat + vision
 ```
 
 ---

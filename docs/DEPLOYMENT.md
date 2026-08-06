@@ -6,7 +6,7 @@ Copy `.env.example` and fill in:
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `OPENROUTER_API_KEY` | yes | AI chat, disease detection, soil interpretation |
+| `OPEN_AI_API_KEY` | yes | AI chat, disease detection, soil interpretation |
 | `SARVAM_AI_API_KEY` | yes | Speech-to-text + text-to-speech |
 | `AUTH_SECRET` | yes | Signs session cookies. `openssl rand -hex 32` |
 | `DATABASE_URL` | prod | `libsql://…` (Turso). Defaults to local SQLite file |

@@ -23,10 +23,8 @@ function langLabel(code: string): string {
   return LANG_LABELS[code] ?? "English";
 }
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-// Gemini 2.5 Flash returns answer text directly (no mandatory hidden "reasoning"
-// budget that silently eats the whole token allowance like gemini-3.5-flash did).
-const CHAT_MODEL = "google/gemini-2.5-flash";
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const CHAT_MODEL = "gpt-4o-mini";
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -39,16 +37,14 @@ async function callOpenRouter(
   messages: ChatMessage[],
   opts: { maxTokens?: number; model?: string } = {},
 ): Promise<string> {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) throw new Error("AI is not configured (missing OPENROUTER_API_KEY).");
+  const key = process.env.OPEN_AI_API_KEY;
+  if (!key) throw new Error("AI is not configured (missing OPEN_AI_API_KEY).");
 
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(OPENAI_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://sanjaya.farm",
-      "X-Title": "Sanjaya Farm AI",
     },
     body: JSON.stringify({
       model: opts.model ?? CHAT_MODEL,

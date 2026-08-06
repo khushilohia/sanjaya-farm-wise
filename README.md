@@ -27,7 +27,7 @@ The local database is a zero-setup SQLite file at `data/sanjaya.db`.
 
 ## Environment variables
 
-See [.env.example](.env.example). Required: `OPENROUTER_API_KEY` (AI), `SARVAM_AI_API_KEY` (voice), `AUTH_SECRET` (sessions). Optional: `DATA_GOV_IN_API_KEY` (live mandi prices), `DATABASE_URL`/`DATABASE_AUTH_TOKEN` (Turso in production), `ADMIN_PHONES` (super-admin access to `/admin`).
+See [.env.example](.env.example). Required: `OPEN_AI_API_KEY` (AI), `SARVAM_AI_API_KEY` (voice), `AUTH_SECRET` (sessions). Optional: `DATA_GOV_IN_API_KEY` (live mandi prices), `DATABASE_URL`/`DATABASE_AUTH_TOKEN` (Turso in production), `ADMIN_PHONES` (super-admin access to `/admin`).
 
 ## Production
 
