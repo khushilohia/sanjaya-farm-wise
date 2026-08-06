@@ -20,6 +20,9 @@ import {
   Fingerprint,
   Smartphone,
   PhoneCall,
+  UserCheck,
+  MapPinned,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
@@ -148,6 +151,39 @@ const FIELD_BENEFITS = [
     title: "A history that grows",
     desc: "Every visit adds to your farmer ID's record, so advice gets sharper over seasons instead of starting fresh each time.",
     tone: "sky" as const,
+  },
+];
+
+// What happens when the AI alone isn't enough — each rung is a real escalation
+// path with its own timeframe, not decorative filler.
+const ESCALATION_LADDER = [
+  {
+    when: "First · instant",
+    icon: Bot,
+    title: "Sanjaya answers",
+    desc: "Speech or text, any hour, in your language — using your actual soil test and weather.",
+    tone: "primary" as const,
+  },
+  {
+    when: "Second · same day",
+    icon: UserCheck,
+    title: "An agronomist calls",
+    desc: "Whenever you ask for one, or the AI isn't confident enough to guess.",
+    tone: "sky" as const,
+  },
+  {
+    when: "Third · within 72 hours",
+    icon: MapPinned,
+    title: "A field visit",
+    desc: "The operator or an agronomist comes back out to look at the plot in person.",
+    tone: "soil" as const,
+  },
+  {
+    when: "Fourth · as needed",
+    icon: FlaskConical,
+    title: "Lab referral",
+    desc: "Samples go to a proper laboratory when the field kit can't give a precise enough answer.",
+    tone: "harvest" as const,
   },
 ];
 
@@ -528,6 +564,69 @@ export function LandingPage() {
               </p>
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* Escalation ladder: what happens if the AI can't fully answer */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+              When you need more than an answer
+            </div>
+            <h2 className="mt-3 font-display text-4xl font-semibold">
+              The AI never leaves you stuck
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              If Sanjaya can't fully resolve it, a real person picks it up next — automatically, not
+              because you asked twice.
+            </p>
+          </Reveal>
+
+          <div className="relative mt-16">
+            <div
+              className="absolute left-6 top-6 bottom-6 w-px bg-linear-to-b from-primary/50 via-soil/50 to-harvest/50 md:left-0 md:right-0 md:top-8 md:h-px md:w-auto md:bg-linear-to-r"
+              aria-hidden="true"
+            />
+            <div className="grid gap-10 md:grid-cols-4 md:gap-6">
+              {ESCALATION_LADDER.map((rung, i) => {
+                const tone = TONE_STYLES[rung.tone];
+                return (
+                  <Reveal key={rung.title} delay={i * 120} className="relative">
+                    <div className="flex w-full gap-4 text-left md:flex-col md:gap-0 md:text-center">
+                      <div className="relative shrink-0 md:flex md:justify-center">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ring-4 ring-background ${tone.badge} shadow-md`}
+                        >
+                          <rung.icon className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <div className="md:mt-5">
+                        <div
+                          className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${tone.text}`}
+                        >
+                          {rung.when}
+                        </div>
+                        <h3 className="mt-1 font-display text-lg font-semibold">{rung.title}</h3>
+                        <p className="mt-1.5 text-sm text-muted-foreground md:mx-auto md:max-w-[24ch]">
+                          {rung.desc}
+                        </p>
+                      </div>
+                    </div>
+                    {i < ESCALATION_LADDER.length - 1 && (
+                      <div
+                        className="absolute top-4 hidden text-muted-foreground/50 md:block"
+                        style={{ left: "calc(100% - 8px)" }}
+                        aria-hidden="true"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    )}
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
