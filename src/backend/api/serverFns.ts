@@ -302,23 +302,38 @@ type SoilLayer = {
   depths: { label: string; values: { mean: number | null } }[];
 };
 
+async function queryISRIC(lat: number, lon: number): Promise<SoilLayer[]> {
+  const props = ["phh2o", "nitrogen", "soc", "clay", "sand", "silt", "cec"];
+  const query =
+    props.map((p) => `property=${p}`).join("&") + "&depth=0-5cm&depth=5-15cm&value=mean";
+  const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&${query}`;
+
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`Soil service error ${res.status}`);
+  const json = (await res.json()) as { properties?: { layers?: SoilLayer[] } };
+  return json.properties?.layers ?? [];
+}
+
+function hasData(layers: SoilLayer[]): boolean {
+  return layers.some((l) => l.depths.some((d) => d.values?.mean != null));
+}
+
 export const fetchSoilData = createServerFn({ method: "POST" })
   .inputValidator(z.object({ lat: z.number(), lon: z.number() }))
   .handler(async ({ data }) => {
-    const props = ["phh2o", "nitrogen", "soc", "clay", "sand", "silt", "cec"];
-    const query =
-      props.map((p) => `property=${p}`).join("&") + "&depth=0-5cm&depth=5-15cm&value=mean";
-    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${data.lon}&lat=${data.lat}&${query}`;
+    let layers = await queryISRIC(data.lat, data.lon);
 
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) {
-      throw new Error(`Soil service error ${res.status}`);
+    // ISRIC's 250m raster is occasionally masked (water, urban, cloud) at an
+    // exact point even though neighbouring pixels have full coverage — probe
+    // a small ring around the point and use the first pixel with real data.
+    if (!hasData(layers)) {
+      const offsets = [0.01, -0.01, 0.02, -0.02, 0.05, -0.05];
+      for (const d of offsets) {
+        layers = await queryISRIC(data.lat + d, data.lon + d);
+        if (hasData(layers)) break;
+      }
     }
-    const json = (await res.json()) as {
-      properties?: { layers?: SoilLayer[] };
-    };
 
-    const layers = json.properties?.layers ?? [];
     const read = (name: string): number | null => {
       const layer = layers.find((l) => l.name === name);
       if (!layer) return null;
