@@ -10,7 +10,6 @@ import {
   Camera,
   Bell,
   Users,
-  Terminal,
   Map,
   LogOut,
   Menu,
@@ -52,7 +51,7 @@ const NAV_SECTIONS = [
   {
     label: "System",
     items: [
-      { to: "/kiosk", icon: Terminal, label: "Kiosk Mode" },
+      // Kiosk mode disabled — see src/routes/kiosk.tsx.disabled
       { to: "/admin", icon: Map, label: "Admin" },
     ],
   },

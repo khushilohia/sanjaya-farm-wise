@@ -15,7 +15,6 @@ import { Route as SchemesRouteImport } from './routes/schemes'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as MarketRouteImport } from './routes/market'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as DiseaseDetectionRouteImport } from './routes/disease-detection'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CommunityRouteImport } from './routes/community'
@@ -52,11 +51,6 @@ const MarketRoute = MarketRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KioskRoute = KioskRouteImport.update({
-  id: '/kiosk',
-  path: '/kiosk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiseaseDetectionRoute = DiseaseDetectionRouteImport.update({
@@ -103,7 +97,6 @@ export interface FileRoutesByFullPath {
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
-  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -119,7 +112,6 @@ export interface FileRoutesByTo {
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
-  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -136,7 +128,6 @@ export interface FileRoutesById {
   '/community': typeof CommunityRoute
   '/dashboard': typeof DashboardRoute
   '/disease-detection': typeof DiseaseDetectionRoute
-  '/kiosk': typeof KioskRoute
   '/login': typeof LoginRoute
   '/market': typeof MarketRoute
   '/register': typeof RegisterRoute
@@ -154,7 +145,6 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/disease-detection'
-    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -170,7 +160,6 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/disease-detection'
-    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -186,7 +175,6 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/disease-detection'
-    | '/kiosk'
     | '/login'
     | '/market'
     | '/register'
@@ -203,7 +191,6 @@ export interface RootRouteChildren {
   CommunityRoute: typeof CommunityRoute
   DashboardRoute: typeof DashboardRoute
   DiseaseDetectionRoute: typeof DiseaseDetectionRoute
-  KioskRoute: typeof KioskRoute
   LoginRoute: typeof LoginRoute
   MarketRoute: typeof MarketRoute
   RegisterRoute: typeof RegisterRoute
@@ -254,13 +241,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kiosk': {
-      id: '/kiosk'
-      path: '/kiosk'
-      fullPath: '/kiosk'
-      preLoaderRoute: typeof KioskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/disease-detection': {
@@ -323,7 +303,6 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRoute: CommunityRoute,
   DashboardRoute: DashboardRoute,
   DiseaseDetectionRoute: DiseaseDetectionRoute,
-  KioskRoute: KioskRoute,
   LoginRoute: LoginRoute,
   MarketRoute: MarketRoute,
   RegisterRoute: RegisterRoute,

@@ -18,7 +18,6 @@ const FOOTER_COLUMNS = [
       { label: "Schemes", to: "/schemes" },
       { label: "Alerts", to: "/alerts" },
       { label: "Community", to: "/community" },
-      { label: "Kiosk", to: "/kiosk" },
       { label: "Dashboard", to: "/dashboard" },
     ],
   },
