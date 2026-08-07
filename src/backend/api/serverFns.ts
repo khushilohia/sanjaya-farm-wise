@@ -97,9 +97,13 @@ export const askAI = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const systemPrompt = `You are Sanjaya, a friendly AI farming assistant for smallholder farmers in Northeast India and Nepal. You talk like a helpful village agriculture officer having a real conversation.
 
-LANGUAGE: Always reply in ${langLabel(data.language)}.
+LANGUAGE: Always reply ENTIRELY in ${langLabel(data.language)} — every word, including crop and farming terms. Never switch to or mix in another language mid-answer, even for a crop name, unit or farming term (for example, if replying in English, always say "rice" and "crop", never switch to Hindi words like "chawal" or "fasal" partway through).
 
-STYLE: Keep answers SHORT, SIMPLE and PRECISE — usually two to four sentences. Use plain everyday words a farmer with little schooling understands. Speak naturally with NO markdown, NO bullet symbols, NO asterisks or hashes, because your reply is read aloud by a voice. Give the one or two most important things to do, not a long lecture. Mention exact quantities, timing or amounts only when they are the answer to the question.
+STYLE: Use plain everyday words a farmer with little schooling understands. Speak naturally with NO markdown, NO asterisks or hashes, because your reply is read aloud by a voice. Mention exact quantities, timing or amounts only when they are the answer to the question.
+
+For a quick factual question (a price, a date, a yes/no, a single fact) keep it SHORT and PRECISE — two to four sentences, the one or two things that matter, not a lecture.
+
+For a "how to grow / how to treat / describe the process" question, the farmer needs real, usable detail — do NOT compress it to two sentences. Walk through it as a numbered sequence of short steps spoken like a real conversation — "First... Second... Third..." — covering the practical stages in order (for example: land or bed preparation, spacing or sowing depth, watering, fertilizer stages, pest watch, harvest signs — whichever actually apply to the question). Each step should be one short, concrete sentence a farmer can act on, not vague theory. Put each step on its own line so it is easy to read as well as to hear.
 
 CROSS-QUESTION LIKE A CHATBOT: If the farmer's question is vague or missing a key detail you need to answer well — such as which crop, the growth stage, the symptoms, the area, or what they already tried — do NOT guess. Ask ONE short, simple follow-up question to get that detail, then stop and wait. Only give a full answer once you have enough to be useful. When the farm context below already tells you the crop, soil, or weather, USE it and don't re-ask for it.
 
@@ -177,7 +181,8 @@ export const transcribeAudio = createServerFn({ method: "POST" })
 // Text-to-speech (Sarvam) — chunked for long answers
 // ---------------------------------------------------------------------------
 
-function splitIntoChunks(text: string, maxLen = 480): string[] {
+// Splits one line of text into <=maxLen pieces on sentence boundaries.
+function splitLineIntoChunks(text: string, maxLen: number): string[] {
   const sentences = text.match(/[^.!?।]+[.!?।]+|\S+$/g) ?? [text];
   const chunks: string[] = [];
   let current = "";
@@ -198,6 +203,14 @@ function splitIntoChunks(text: string, maxLen = 480): string[] {
     }
   }
   if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
+// Splits on line breaks first (so numbered steps stay their own chunk/line for
+// display), then on sentence boundaries within a line for Sarvam's char limit.
+function splitIntoChunks(text: string, maxLen = 480): string[] {
+  const lines = text.split("\n").filter((l) => l.trim());
+  const chunks = lines.flatMap((line) => splitLineIntoChunks(line.trim(), maxLen));
   return chunks.length ? chunks : [text.slice(0, maxLen)];
 }
 
@@ -231,16 +244,18 @@ export const sarvamTTS = createServerFn({ method: "POST" })
         });
         if (!r.ok) return null;
         const j = (await r.json()) as { audios?: string[] };
-        return j.audios?.[0] ?? null;
+        const audio = j.audios?.[0];
+        return audio ? { text: chunk, audio } : null;
       }),
     );
 
-    const audios = results.filter((a): a is string => Boolean(a));
-    if (audios.length === 0) {
+    const segments = results.filter((s): s is { text: string; audio: string } => Boolean(s));
+    if (segments.length === 0) {
       // Surface failure so the client can use its browser-TTS fallback.
       throw new Error("Text-to-speech returned no audio.");
     }
-    return { audios };
+    // Paired so the client can reveal each chunk's text exactly as its audio starts.
+    return { audios: segments.map((s) => s.audio), texts: segments.map((s) => s.text) };
   });
 
 // ---------------------------------------------------------------------------

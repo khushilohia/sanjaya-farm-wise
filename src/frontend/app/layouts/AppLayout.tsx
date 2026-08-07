@@ -93,7 +93,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+      <nav className="flex-1 overflow-hidden py-4 px-3 space-y-5">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
@@ -190,8 +190,9 @@ export function AppLayout({
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* Main content — stable gutter so a scrollbar appearing/disappearing
+            (e.g. while an AI answer streams in) never shifts the layout width */}
+        <main className="flex-1 overflow-y-auto scrollbar-gutter-stable">{children}</main>
       </div>
     </div>
   );

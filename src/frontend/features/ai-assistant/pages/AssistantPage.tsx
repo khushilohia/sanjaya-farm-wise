@@ -101,6 +101,50 @@ function answerLinks(content: string) {
   return ANSWER_LINKS.filter((l) => l.pattern.test(content)).slice(0, 2);
 }
 
+// Escapes regex special characters so a farmer's own crop/soil names (user
+// input) can be dropped safely into a RegExp.
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Builds the set of phrases worth underlining in an answer: the farmer's own
+// registered crops, their known soil type, and price-trend language — the
+// parts of the reply that show Sanjaya actually used their real data, not a
+// generic answer.
+function personalizedTerms(cropNames: string[], soilType: string | null): RegExp | null {
+  const terms = [
+    ...cropNames.map(escapeRegExp),
+    soilType ? escapeRegExp(soilType) : null,
+    "price (?:trend )?(?:is |was )?(?:up|down|rising|falling|increasing|decreasing)",
+    "trend (?:is |was )?(?:up|down)",
+  ].filter((t): t is string => Boolean(t));
+  if (terms.length === 0) return null;
+  return new RegExp(`(${terms.join("|")})`, "gi");
+}
+
+// Renders text with the matched phrases underlined, to show at a glance which
+// parts of the answer are grounded in the farmer's own data.
+function Highlighted({ text, pattern }: { text: string; pattern: RegExp | null }) {
+  if (!pattern) return <>{text}</>;
+  const parts = text.split(pattern);
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <span
+            key={i}
+            className="rounded-sm underline decoration-primary decoration-2 underline-offset-2 font-medium text-primary"
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 export function AssistantPage() {
   const user = useAuthStore((s) => s.user);
   const { addAILog, cropEntries, soilType, setupComplete } = useFarmStore();
@@ -111,6 +155,9 @@ export function AssistantPage() {
   const [liveMode, setLiveMode] = useState(false);
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState("");
+
+  const cropNames = [...cropEntries.map((c) => c.name), ...(user?.crops ?? [])];
+  const highlightPattern = personalizedTerms(cropNames, soilType);
 
   const aiChat = useAIChat();
   const { speak, stop: stopSpeaking } = useSarvamTTS();
@@ -141,9 +188,12 @@ export function AssistantPage() {
         });
         const answer = (result as { answer: string }).answer;
         addAILog({ question, answer, language: lang });
-        setMessages((m) => [...m, { role: "assistant", content: answer }]);
 
+        // Show the answer right away — never gate the text on voice
+        // playback, since a slow or failed TTS call would otherwise leave
+        // an empty bubble on screen.
         setOrbState("speaking");
+        setMessages((m) => [...m, { role: "assistant", content: answer }]);
         await speak(answer, lang);
       } catch (err) {
         const msg =
@@ -298,7 +348,7 @@ export function AssistantPage() {
           </div>
 
           {/* Conversation thread */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-gutter-stable">
             <div className="mx-auto w-full max-w-2xl space-y-4">
               {messages.length === 0 && orbState === "idle" && (
                 <div className="space-y-4 text-center">
@@ -327,7 +377,7 @@ export function AssistantPage() {
                   className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    className={`max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       m.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "border border-primary/20 bg-background/85 backdrop-blur-sm"
@@ -338,7 +388,11 @@ export function AssistantPage() {
                         <Sprout className="h-3.5 w-3.5" /> Sanjaya
                       </div>
                     )}
-                    {m.content}
+                    {m.role === "assistant" ? (
+                      <Highlighted text={m.content} pattern={highlightPattern} />
+                    ) : (
+                      m.content
+                    )}
                     {m.role === "assistant" && answerLinks(m.content).length > 0 && (
                       <div className="mt-2.5 flex flex-wrap gap-2">
                         {answerLinks(m.content).map((l) => (
